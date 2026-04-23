@@ -29,7 +29,8 @@ export async function runDiff(argv: CliArgs): Promise<void> {
     const begin = "<!-- BEGIN:haac-aikit -->";
     const end = "<!-- END:haac-aikit -->";
     const currentRegion = extractRegion(current, begin, end);
-    const freshRegion = extractRegion(`\n${begin}\n${freshContent}\n${end}\n`, begin, end);
+    // freshContent already contains markers (from the .tmpl file), so extract directly
+    const freshRegion = extractRegion(freshContent, begin, end);
     if (currentRegion !== freshRegion) {
       drifted.push("AGENTS.md (managed region differs from catalog template)");
     }
