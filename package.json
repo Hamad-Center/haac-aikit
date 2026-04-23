@@ -54,9 +54,13 @@
     "rules"
   ],
   "license": "MIT",
+  "homepage": "https://github.com/Hamad-Center/haac-aikit#readme",
+  "bugs": {
+    "url": "https://github.com/Hamad-Center/haac-aikit/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mersall/haac-aikit.git"
+    "url": "git+https://github.com/Hamad-Center/haac-aikit.git"
   },
   "publishConfig": {
     "access": "public"

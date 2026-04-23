@@ -1,5 +1,9 @@
 # haac-aikit
 
+[![npm version](https://img.shields.io/npm/v/haac-aikit.svg)](https://www.npmjs.com/package/haac-aikit)
+[![GitHub](https://img.shields.io/badge/github-Hamad--Center%2Fhaac--aikit-blue?logo=github)](https://github.com/Hamad-Center/haac-aikit)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 **The batteries-included AI-agentic-coding kit.**  
 One command drops a complete, opinionated, cross-tool setup into any repo — rules, skills, slash commands, subagents, safety hooks, MCP stub, and CI templates.
 
@@ -111,6 +115,12 @@ haac-aikit is built on the evidence from four research passes:
 | Open Skills standard | ✅ agentskills.io | ❌ | ❌ | ❌ |
 | Config file backed | ✅ `.aikitrc.json` | ❌ | ❌ | ❌ |
 | Idempotent markers | ✅ | ❌ | ❌ (`.bak` backups) | ❌ |
+
+---
+
+## Contributing
+
+Issues and PRs welcome at [github.com/Hamad-Center/haac-aikit](https://github.com/Hamad-Center/haac-aikit).
 
 ---
 
