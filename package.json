@@ -4,8 +4,8 @@
   "description": "The batteries-included AI-agentic-coding kit. One command drops a complete, opinionated, cross-tool setup into any repo.",
   "type": "module",
   "bin": {
-    "aikit": "./dist/cli.mjs",
-    "haac-aikit": "./dist/cli.mjs"
+    "aikit": "dist/cli.mjs",
+    "haac-aikit": "dist/cli.mjs"
   },
   "exports": {
     ".": "./dist/cli.mjs"
