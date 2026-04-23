@@ -1,0 +1,5 @@
+# BEGIN:haac-aikit
+read:
+  - AGENTS.md
+  - CONVENTIONS.md
+# END:haac-aikit

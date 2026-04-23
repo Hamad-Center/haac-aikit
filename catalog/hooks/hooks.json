@@ -1,0 +1,70 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/block-dangerous-bash.sh",
+            "description": "Block destructive shell commands"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/block-force-push-main.sh",
+            "description": "Block force-push to protected branches"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/block-secrets-in-commits.sh",
+            "description": "Block commits containing likely secrets"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/file-guard.sh",
+            "description": "Block access to sensitive files"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/format-on-save.sh",
+            "description": "Auto-format after file write"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-start-prime.sh",
+            "description": "Print session context (branch, dirty state, TODOs)"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/compaction-preservation.sh",
+            "description": "Save working state before context compaction"
+          }
+        ]
+      }
+    ]
+  }
+}

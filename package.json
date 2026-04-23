@@ -1,0 +1,64 @@
+{
+  "name": "haac-aikit",
+  "version": "0.1.0",
+  "description": "The batteries-included AI-agentic-coding kit. One command drops a complete, opinionated, cross-tool setup into any repo.",
+  "type": "module",
+  "bin": {
+    "aikit": "./dist/cli.mjs",
+    "haac-aikit": "./dist/cli.mjs"
+  },
+  "exports": {
+    ".": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "catalog"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "catalog:check": "node scripts/catalog-check.js",
+    "prepublishOnly": "pnpm build && pnpm typecheck"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "kleur": "^4.1.5",
+    "mri": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/mri": "^1.1.6",
+    "@types/node": "^20.17.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.9"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "claude",
+    "cursor",
+    "copilot",
+    "windsurf",
+    "aider",
+    "gemini",
+    "codex",
+    "AGENTS.md",
+    "skills",
+    "rules"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mersall/haac-aikit.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

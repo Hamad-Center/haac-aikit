@@ -1,0 +1,13 @@
+---
+description: Base project rules — see AGENTS.md for full context
+alwaysApply: true
+---
+
+<!-- BEGIN:haac-aikit -->
+See [AGENTS.md](../AGENTS.md) for the authoritative project rules.
+
+Key constraints:
+- Follow commit conventions from AGENTS.md
+- Never commit .env* or secrets/**
+- Never force-push to main/master/develop
+<!-- END:haac-aikit -->

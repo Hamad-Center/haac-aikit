@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Project-specific allowlist"
+regexes = []
+paths = [
+  ".gitleaks.toml",
+  "ATTRIBUTIONS.md",
+]
