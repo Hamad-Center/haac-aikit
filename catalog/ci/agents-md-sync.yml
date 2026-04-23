@@ -1,0 +1,42 @@
+name: AI kit sync
+on:
+  schedule:
+    - cron: "0 9 * * 1"  # weekly on Mondays
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: aikit-sync
+  cancel-in-progress: true
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: "20"
+      - name: Run aikit sync
+        run: npx haac-aikit sync --yes
+      - name: Check for drift
+        id: drift
+        run: |
+          git diff --exit-code || echo "DRIFT=true" >> "$GITHUB_OUTPUT"
+      - name: Open PR for drift
+        if: steps.drift.outputs.DRIFT == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="aikit/sync-$(date +%Y-%m-%d)"
+          git checkout -b "$BRANCH"
+          git add .
+          git commit -m "chore(aikit): weekly sync from catalog"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "chore(aikit): weekly catalog sync" \
+            --body "Automated sync from haac-aikit catalog. Review and merge if changes look good." \
+            --label "automated"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

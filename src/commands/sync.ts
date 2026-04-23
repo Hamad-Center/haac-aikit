@@ -3,7 +3,7 @@ import { readConfig } from "../fs/readConfig.js";
 import { safeWrite } from "../fs/safeWrite.js";
 import { ensureGitignoreEntries } from "../fs/gitignore.js";
 import { loadCatalog } from "../catalog/index.js";
-import { existsSync, mkdirSync, copyFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { CliArgs, WriteResult } from "../types.js";
@@ -76,9 +76,22 @@ export async function runSync(argv: CliArgs): Promise<void> {
     results.push(...syncAgents(config.shape, dryRun));
   }
 
+  // Commands
+  if (config.integrations.commands) {
+    results.push(...syncCommands(dryRun));
+  }
+
   // CI
   if (config.integrations.ci) {
     results.push(...syncCI(dryRun));
+  }
+
+  // Everything tier
+  if (config.integrations.devcontainer) {
+    results.push(...syncDir("devcontainer", ".devcontainer", dryRun, [".json"]));
+  }
+  if (config.integrations.otel) {
+    results.push(safeWrite(".env.example", readCatalogFile("settings/env.example"), { dryRun, useMarkers: false }));
   }
 
   ensureGitignoreEntries(dryRun);
@@ -178,6 +191,25 @@ function syncAgents(shapes: string[], dryRun: boolean): WriteResult[] {
   return results;
 }
 
+function syncCommands(dryRun: boolean): WriteResult[] {
+  const srcDir = join(CATALOG_ROOT, "commands");
+  const destDir = `.claude/commands`;
+  const results: WriteResult[] = [];
+
+  if (!existsSync(srcDir)) return results;
+
+  const files = readdirSync(srcDir).filter((f) => f.endsWith(".md"));
+  if (!dryRun) mkdirSync(destDir, { recursive: true });
+
+  for (const file of files) {
+    const dest = join(destDir, file);
+    if (!dryRun) copyFileSync(join(srcDir, file), dest);
+    results.push({ path: dest, action: existsSync(dest) ? "updated" : "created" });
+  }
+
+  return results;
+}
+
 function syncCI(dryRun: boolean): WriteResult[] {
   const srcDir = join(CATALOG_ROOT, "ci");
   const destDir = `.github/workflows`;
@@ -195,4 +227,33 @@ function syncCI(dryRun: boolean): WriteResult[] {
   }
 
   return results;
+}
+
+function syncDir(
+  catalogSubdir: string,
+  destDir: string,
+  dryRun: boolean,
+  extensions = [".md", ".json", ".yml", ".yaml"]
+): WriteResult[] {
+  const srcDir = join(CATALOG_ROOT, catalogSubdir);
+  const results: WriteResult[] = [];
+
+  if (!existsSync(srcDir)) return results;
+
+  const files = readdirSync(srcDir).filter((f) =>
+    extensions.some((ext) => f.endsWith(ext))
+  );
+  if (!dryRun) mkdirSync(destDir, { recursive: true });
+
+  for (const file of files) {
+    const dest = join(destDir, file);
+    if (!dryRun) copyFileSync(join(srcDir, file), dest);
+    results.push({ path: dest, action: existsSync(dest) ? "updated" : "created" });
+  }
+
+  return results;
+}
+
+function readCatalogFile(rel: string): string {
+  return readFileSync(join(CATALOG_ROOT, rel), "utf8");
 }
