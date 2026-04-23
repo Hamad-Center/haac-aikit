@@ -1,7 +1,7 @@
 ---
 name: backend
 description: Backend specialist. Handles API design, database schemas, authentication, background jobs, and service integrations. Use for tasks requiring deep knowledge of server-side patterns, data consistency, or distributed systems trade-offs.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools:
   - Read
   - Edit

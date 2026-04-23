@@ -1,7 +1,7 @@
 ---
 name: planner
 description: Writes detailed, sequenced implementation plans. Analyses the codebase to understand existing patterns, then produces a bite-sized plan an implementer can execute without further clarification. Use before any multi-step implementation.
-model: claude-opus-4-5
+model: claude-opus-4-7
 tools:
   - Read
   - Grep

@@ -1,7 +1,7 @@
 ---
 name: devops
 description: Handles CI/CD pipelines, Dockerfiles, deployment configuration, infrastructure-as-code, and release automation. Use when the task involves build systems, containers, GitHub Actions, or cloud deployment.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools:
   - Read
   - Edit

@@ -1,7 +1,7 @@
 ---
 name: security-auditor
 description: OWASP-aligned security sweep and secrets scan. Checks for injection vulnerabilities, broken auth, sensitive data exposure, access control gaps, and hardcoded credentials. Use before any PR that touches auth, API endpoints, or file/env handling.
-model: claude-opus-4-5
+model: claude-opus-4-7
 tools:
   - Read
   - Grep

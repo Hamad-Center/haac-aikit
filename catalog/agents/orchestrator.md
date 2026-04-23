@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: Decomposes complex tasks into sub-tasks and dispatches specialist agents. Pure coordinator — never writes implementation code directly. Use when a task spans multiple concerns or could benefit from parallel execution.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools:
   - Agent
   - Read

@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: Read-only codebase and web exploration. Maps architecture, traces execution paths, answers questions about how things work. Never edits files. Use when you need to understand before acting.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools:
   - Read
   - Grep

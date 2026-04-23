@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Reviews code for bugs, logic errors, security vulnerabilities, and convention violations. Confidence-based — only reports findings with ≥80% confidence. Use after implementation is complete and tests pass.
-model: claude-opus-4-5
+model: claude-opus-4-7
 tools:
   - Read
   - Grep

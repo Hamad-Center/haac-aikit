@@ -1,7 +1,7 @@
 ---
 name: mobile
 description: Mobile specialist for React Native or Flutter. Handles platform-specific behaviour, offline support, push notifications, and app store requirements. Use for tasks with iOS/Android-specific constraints.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools:
   - Read
   - Edit

@@ -1,7 +1,7 @@
 ---
 name: tester
 description: Writes and runs tests. Identifies coverage gaps, writes missing tests, and reports test results. Use after implementation to verify correctness and catch regressions before merge.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools:
   - Read
   - Edit

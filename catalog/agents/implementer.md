@@ -1,7 +1,7 @@
 ---
 name: implementer
 description: Executes implementation plans. Writes and edits code, following the plan step by step with verification after each step. The workhorse agent — use for any concrete coding task once a plan exists.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools:
   - Read
   - Edit

@@ -1,7 +1,7 @@
 ---
 name: frontend
 description: Frontend specialist. Handles React/Vue/Svelte components, CSS, accessibility, performance, and UI testing. Use for tasks that require deep knowledge of browser APIs, component architecture, or UI/UX constraints.
-model: claude-sonnet-4-5
+model: claude-sonnet-4-6
 tools:
   - Read
   - Edit
