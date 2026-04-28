@@ -41,6 +41,20 @@ Never force-push to `main`/`master`/`develop`.
 TODO: Project-specific security notes.
 
 ## Gotchas
-<!-- High-signal section. Add things the agent repeatedly gets wrong. -->
+<!-- High-signal section. Add things the agent repeatedly gets wrong.
+     Tip: prefix the most load-bearing rules with `IMPORTANT:` or `YOU MUST` —
+     Anthropic guidance says emphasis tokens improve adherence noticeably.
+     HTML block comments like this one are stripped before injection, so they
+     cost zero context tokens. -->
 TODO
+
+## When compacting
+<!-- Tells Claude what to preserve when /compact runs. The project-root
+     CLAUDE.md / AGENTS.md is re-injected after compaction; nested files are
+     not. Use this block to lock in must-keep context. -->
+Always preserve: the full list of files modified this session, any failing test names + error messages, and the current task being worked on.
+
+## Further reading
+- `docs/claude-md-reference.md` — Anthropic 2026 reference for CLAUDE.md / memory / `.claude/rules/` (shipped by `aikit` when `claude` is selected at scope ≥ standard).
+- `.claude/rules/` — drop topic-scoped or path-scoped rule files here (see the example shipped with this kit). Path-scoped rules load only when Claude reads matching files, saving context.
 <!-- END:haac-aikit -->

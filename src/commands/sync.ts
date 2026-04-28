@@ -2,14 +2,10 @@ import * as p from "@clack/prompts";
 import { readConfig } from "../fs/readConfig.js";
 import { safeWrite } from "../fs/safeWrite.js";
 import { ensureGitignoreEntries } from "../fs/gitignore.js";
-import { loadCatalog } from "../catalog/index.js";
+import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
 import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import type { CliArgs, WriteResult } from "../types.js";
-
-// When bundled: import.meta.url points to dist/cli.mjs; catalog is at ../catalog
-const CATALOG_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "catalog");
 
 export async function runSync(argv: CliArgs): Promise<void> {
   const dryRun = argv["dry-run"];
@@ -37,6 +33,10 @@ export async function runSync(argv: CliArgs): Promise<void> {
   if (config.tools.includes("claude")) {
     results.push(safeWrite("CLAUDE.md", catalog.claudeMd(), { ...opts, useMarkers: false }));
     results.push(safeWrite(".claude/settings.json", catalog.settingsJson(), { ...opts, useMarkers: false }));
+    if (config.scope !== "minimal") {
+      results.push(safeWrite("docs/claude-md-reference.md", catalog.claudeMdReference(), { ...opts, useMarkers: false }));
+      results.push(...syncDir("rules/claude-rules", ".claude/rules", dryRun, [".md"]));
+    }
   }
   if (config.tools.includes("copilot")) {
     results.push(safeWrite(".github/copilot-instructions.md", catalog.copilotInstructions(), { ...opts, useMarkers: false }));

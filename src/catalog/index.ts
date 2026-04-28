@@ -1,13 +1,30 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { interpolate } from "../render/template.js";
 
-// When bundled: import.meta.url points to dist/cli.mjs; catalog is at ../catalog
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "catalog");
+// Walk up from this file looking for a sibling `catalog/` directory. Resolves
+// correctly in both states:
+//   bundled: dist/cli.mjs        → dist/../catalog       = ./catalog        ✓
+//   dev:     src/catalog/index.ts → walk up → repo-root/catalog              ✓
+function findCatalogRoot(): string {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 6; i++) {
+    const candidate = join(dir, "catalog");
+    if (existsSync(join(candidate, "rules", "AGENTS.md.tmpl"))) {
+      return candidate;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error("haac-aikit: catalog/ directory not found relative to module location");
+}
+
+export const CATALOG_ROOT = findCatalogRoot();
 
 function read(rel: string): string {
-  return readFileSync(join(ROOT, rel), "utf8");
+  return readFileSync(join(CATALOG_ROOT, rel), "utf8");
 }
 
 export function loadCatalog() {
@@ -22,5 +39,6 @@ export function loadCatalog() {
     geminiMd: () => read("rules/GEMINI.md.shim"),
     mcpJson: () => read("mcp/mcp.json"),
     settingsJson: () => read("settings/settings.json"),
+    claudeMdReference: () => read("docs/claude-md-reference.md"),
   };
 }

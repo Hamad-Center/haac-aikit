@@ -1,12 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import kleur from "kleur";
 import { readConfig } from "../fs/readConfig.js";
-import { loadCatalog } from "../catalog/index.js";
+import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
 import type { CliArgs } from "../types.js";
-
-const CATALOG_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "catalog");
 
 export async function runDiff(argv: CliArgs): Promise<void> {
   const config = readConfig(argv.config);
@@ -43,6 +40,20 @@ export async function runDiff(argv: CliArgs): Promise<void> {
   checkCatalogDir("skills/tier2", ".claude/skills", missing, drifted);
   checkCatalogDir("agents", ".claude/agents", missing, drifted);
   checkCatalogDir("hooks", ".claude/hooks", missing, drifted, [".sh"]);
+
+  // Claude-only assets shipped at standard+ scope
+  if (config.tools.includes("claude") && config.scope !== "minimal") {
+    checkCatalogDir("rules/claude-rules", ".claude/rules", missing, drifted);
+    const refPath = "docs/claude-md-reference.md";
+    if (!existsSync(refPath)) {
+      missing.push(refPath);
+    } else {
+      const fresh = catalog.claudeMdReference();
+      if (readFileSync(refPath, "utf8") !== fresh) {
+        drifted.push(refPath);
+      }
+    }
+  }
 
   if (missing.length === 0 && drifted.length === 0) {
     process.stdout.write(kleur.green("✓ No drift — project is in sync with catalog.\n"));
