@@ -30,17 +30,20 @@ TODO: How to run a single test; framework quirks.
 <!-- Rule IDs (the `<!-- id: ... -->` comments below) are used by
      `aikit doctor --rules` to track which rules fire and which are followed.
      They cost zero context tokens (HTML comments are stripped before injection).
-     Add IDs to your own rules to opt them into observability. -->
+     Optional metadata after the ID:
+       emphasis=high     prefix with **bold** in dialect translators
+       paths=glob,glob   restrict to matching files (Cursor `globs:`, Claude `paths:`)
+     Add IDs to your own rules to opt them into observability + translation. -->
 - <!-- id: commit.conventional-commits --> Conventional commits: `type(scope): description`
 - <!-- id: commit.types --> Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`
 - <!-- id: pr.title-under-70 --> PR title < 70 characters; body: Summary + Test Plan.
-- <!-- id: git.no-force-push-protected --> Never force-push to `main`/`master`/`develop`.
+- <!-- id: git.no-force-push-protected emphasis=high --> Never force-push to `main`/`master`/`develop`.
 
 ## Security
-<!-- id: security.no-sensitive-files --> Never read, write, or commit:
+<!-- id: security.no-sensitive-files emphasis=high --> Never read, write, or commit:
 - `.env*`, `secrets/`, `.ssh/`, `.aws/`, `*.pem`, `id_rsa*`
 
-<!-- id: git.no-force-push-protected --> Never force-push to `main`/`master`/`develop`.
+<!-- id: git.no-force-push-protected emphasis=high --> Never force-push to `main`/`master`/`develop`.
 
 TODO: Project-specific security notes.
 

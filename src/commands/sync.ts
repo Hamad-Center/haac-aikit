@@ -5,6 +5,7 @@ import { ensureGitignoreEntries } from "../fs/gitignore.js";
 import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
 import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
 import type { CliArgs, WriteResult } from "../types.js";
 
 export async function runSync(argv: CliArgs): Promise<void> {
@@ -43,7 +44,11 @@ export async function runSync(argv: CliArgs): Promise<void> {
     results.push(safeWrite(".github/copilot-instructions.md", catalog.copilotInstructions(), { ...opts, useMarkers: false }));
   }
   if (config.tools.includes("cursor")) {
-    results.push(safeWrite(".cursor/rules/000-base.mdc", catalog.cursorBase(), { ...opts, useMarkers: false }));
+    // Phase 2: dialect-aware translation. Parse the canonical AGENTS.md and
+    // emit Cursor's MDC format with rules extracted, instead of a generic shim.
+    const ruleSet = parseRuleSet(agentsMdContent, config.projectName, config.projectDescription ?? "");
+    const cursorContent = translateForCursor(ruleSet);
+    results.push(safeWrite(".cursor/rules/000-base.mdc", cursorContent, { ...opts, useMarkers: false }));
   }
   if (config.tools.includes("windsurf")) {
     results.push(safeWrite(".windsurf/rules/project.md", catalog.windsurfRules(), { ...opts, useMarkers: false }));
