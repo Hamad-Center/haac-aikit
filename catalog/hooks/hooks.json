@@ -60,6 +60,28 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/judge-rule-compliance.sh",
+            "description": "Telemetry: opt-in LLM judge of rule compliance (set AIKIT_JUDGE=1)"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/judge-rule-compliance.sh",
+            "description": "Telemetry: opt-in LLM judge of rule compliance (set AIKIT_JUDGE=1)"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
