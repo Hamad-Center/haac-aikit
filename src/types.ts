@@ -78,4 +78,6 @@ export interface CliArgs {
   help: boolean;
   version: boolean;
   rules?: boolean;
+  format?: "markdown" | "json";
+  since?: string;
 }

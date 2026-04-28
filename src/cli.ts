@@ -21,6 +21,7 @@ COMMANDS
   list              Show installed items + available catalog
   doctor            Sanity-check: schema, triggers, broken links
   doctor --rules    Rule observability report — which rules fire, are followed, are dead
+  report            Markdown / JSON rule-adherence summary (for PR comments / CI)
 
 FLAGS
   --yes, -y           Accept all defaults
@@ -38,7 +39,7 @@ FLAGS
 async function main(): Promise<void> {
   const argv = mri<CliArgs>(process.argv.slice(2), {
     boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules"],
-    string: ["config", "tools", "preset"],
+    string: ["config", "tools", "preset", "format", "since"],
     alias: { y: "yes", h: "help", v: "version" },
     default: {
       yes: false,
@@ -102,6 +103,11 @@ async function main(): Promise<void> {
     case "doctor": {
       const { runDoctor } = await import("./commands/doctor.js");
       await runDoctor(argv);
+      break;
+    }
+    case "report": {
+      const { runReport } = await import("./commands/report.js");
+      await runReport(argv);
       break;
     }
     default:

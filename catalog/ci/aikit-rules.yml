@@ -1,0 +1,55 @@
+name: aikit rule observability
+
+# Posts (or updates) a sticky PR comment with the aikit rule-adherence report.
+# Requires .aikit/events.jsonl to be present in the PR branch (or downloadable
+# from a previous job artifact). Customise the "Fetch telemetry" step to suit
+# how your team aggregates events across runs.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  rule-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install haac-aikit
+        run: npm install -g haac-aikit
+
+      # CUSTOMISE: point this at wherever your team stores rolled-up telemetry.
+      # Examples: download an artifact, restore from cache, pull from S3.
+      - name: Fetch telemetry
+        run: |
+          mkdir -p .aikit
+          if [ -f .aikit/events.jsonl ]; then
+            echo "Using committed telemetry."
+          else
+            echo "No telemetry found — report will say 'no_telemetry'."
+            touch .aikit/events.jsonl
+          fi
+
+      - name: Generate rule-adherence report
+        id: report
+        run: |
+          aikit report --format=markdown > /tmp/aikit-report.md
+          {
+            echo 'report<<HAAC_EOF'
+            cat /tmp/aikit-report.md
+            echo HAAC_EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post or update sticky PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: aikit-rule-observability
+          message: ${{ steps.report.outputs.report }}
