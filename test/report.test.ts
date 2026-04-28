@@ -80,6 +80,57 @@ describe("aikit report", () => {
     expect(rule.violations).toBe(1);
   });
 
+  it("returns adherence_score=null and basis='no-evidence' when no judge data exists", async () => {
+    writeAgentsMd(["code-style.no-any"]);
+    writeEvents([
+      { ts: "2026-04-29T00:00:00Z", event: "loaded", rule_id: "code-style.no-any" },
+      { ts: "2026-04-29T00:01:00Z", event: "violation", rule_id: "code-style.no-any", file: "src/x.ts" },
+    ]);
+
+    await runReport({ _: ["report"], format: "json" } as never);
+
+    const parsed = JSON.parse(stdout);
+    expect(parsed.adherence_score).toBeNull();
+    expect(parsed.adherence_basis).toBe("no-evidence");
+  });
+
+  it("computes adherence from cited events when judge data is present", async () => {
+    writeAgentsMd(["code-style.no-any"]);
+    writeEvents([
+      { ts: "2026-04-29T00:00:00Z", event: "loaded", rule_id: "code-style.no-any" },
+      { ts: "2026-04-29T00:01:00Z", event: "cited", rule_id: "code-style.no-any" },
+      { ts: "2026-04-29T00:02:00Z", event: "cited", rule_id: "code-style.no-any" },
+      { ts: "2026-04-29T00:03:00Z", event: "cited", rule_id: "code-style.no-any" },
+      { ts: "2026-04-29T00:04:00Z", event: "judged_violation", rule_id: "code-style.no-any" },
+    ]);
+
+    await runReport({ _: ["report"], format: "json" } as never);
+
+    const parsed = JSON.parse(stdout);
+    expect(parsed.adherence_basis).toBe("judge");
+    expect(parsed.adherence_score).toBe(75); // 3 cited / (3 cited + 1 judged_violation)
+    expect(parsed.observed_rules).toBe(1);
+  });
+
+  it("does not let load events inflate the adherence score", async () => {
+    // The pre-fix bug: loaded acted as positive evidence, so 100 loads + 1
+    // violation scored ~99%. New formula: loads ignored, score is null
+    // without cited evidence.
+    writeAgentsMd(["code-style.no-any"]);
+    const events: object[] = [];
+    for (let i = 0; i < 100; i++) {
+      events.push({ ts: `2026-04-29T00:00:${String(i).padStart(2, "0")}Z`, event: "loaded", rule_id: "code-style.no-any" });
+    }
+    events.push({ ts: "2026-04-29T01:00:00Z", event: "violation", rule_id: "code-style.no-any", file: "src/x.ts" });
+    writeEvents(events);
+
+    await runReport({ _: ["report"], format: "json" } as never);
+
+    const parsed = JSON.parse(stdout);
+    expect(parsed.adherence_score).toBeNull();
+    expect(parsed.adherence_basis).toBe("no-evidence");
+  });
+
   it("filters events by --since", async () => {
     writeAgentsMd(["code-style.no-any"]);
     writeEvents([

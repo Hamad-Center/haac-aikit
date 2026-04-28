@@ -83,7 +83,35 @@ describe("aikit doctor --rules", () => {
 
     expect(stdout).toContain("Dead rules");
     expect(stdout).toContain("dead.never-fires");
-    expect(stdout).toContain("Never loaded or violated");
+    expect(stdout).toContain("Never loaded, cited, or violated");
+  });
+
+  it("counts judged_violation events alongside pattern violations (Phase 1.1 LLM judge)", async () => {
+    writeAgentsMd(["code-style.no-console-log"]);
+    writeEvents([
+      { ts: "2026-04-29T00:00:00Z", event: "loaded", rule_id: "code-style.no-console-log" },
+      { ts: "2026-04-29T00:01:00Z", event: "judged_violation", rule_id: "code-style.no-console-log", verdict: "logged in error path" },
+      { ts: "2026-04-29T00:02:00Z", event: "judged_violation", rule_id: "code-style.no-console-log", verdict: "stray debug log" },
+    ]);
+
+    await runDoctor({ _: ["doctor"], rules: true } as never);
+
+    expect(stdout).toContain("Disputed rules");
+    expect(stdout).toContain("code-style.no-console-log");
+  });
+
+  it("classifies cited-only rules as hot (LLM judge fired before InstructionsLoaded)", async () => {
+    writeAgentsMd(["code-style.no-default-export"]);
+    writeEvents([
+      { ts: "2026-04-29T00:00:00Z", event: "cited", rule_id: "code-style.no-default-export" },
+      { ts: "2026-04-29T00:01:00Z", event: "cited", rule_id: "code-style.no-default-export" },
+    ]);
+
+    await runDoctor({ _: ["doctor"], rules: true } as never);
+
+    expect(stdout).toContain("Hot rules");
+    expect(stdout).toContain("code-style.no-default-export");
+    expect(stdout).not.toContain("Dead rules");
   });
 
   it("ignores malformed JSONL lines without crashing", async () => {

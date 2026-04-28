@@ -19,17 +19,21 @@ mkdir -p "$LOG_DIR" 2>/dev/null || { echo '{"decision":"approve"}'; exit 0; }
 
 TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# Extract loaded file paths from the hook input (passed via env var, not stdin,
-# because the heredoc below already occupies python's stdin as the script source).
-FILES="$(HOOK_INPUT="$INPUT" python3 <<'PY' 2>/dev/null || true
-import os, json
+# Do all work inside python so file paths with quotes/backslashes can't break
+# the JSONL output (json.dumps escapes them safely).
+HOOK_INPUT="$INPUT" HOOK_LOG="$LOG_FILE" HOOK_TS="$TS" \
+python3 <<'PY' 2>/dev/null || true
+import json, os, re
 try:
-    d = json.loads(os.environ.get("HOOK_INPUT", ""))
+    payload = json.loads(os.environ.get("HOOK_INPUT", "") or "{}")
+    if not isinstance(payload, dict):
+        payload = {}
 except Exception:
-    d = {}
+    payload = {}
+
 candidates = []
 for key in ("files", "paths", "instructionFiles", "loaded", "memory"):
-    val = d.get(key) if isinstance(d, dict) else None
+    val = payload.get(key)
     if isinstance(val, list):
         candidates.extend(str(v) for v in val if v)
     elif isinstance(val, str):
@@ -37,24 +41,39 @@ for key in ("files", "paths", "instructionFiles", "loaded", "memory"):
 # Always probe the standard memory file locations even if not echoed back.
 for default in ("AGENTS.md", "CLAUDE.md", ".claude/CLAUDE.md"):
     candidates.append(default)
-print("\n".join(dict.fromkeys(candidates)))
-PY
-)"
 
-# For each loaded file, scan for rule IDs in HTML comments and log one event per ID.
-echo "$FILES" | while IFS= read -r FILE; do
-  [[ -z "$FILE" || ! -f "$FILE" ]] && continue
-  # Match <!-- id: foo.bar --> (whitespace tolerant). Requires a dotted slug
-  # starting with a letter, so docstring examples like <!-- id: ... --> don't
-  # produce phantom rule events.
-  grep -oE '<!--[[:space:]]*id:[[:space:]]*[a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+[[:space:]]*-->' "$FILE" 2>/dev/null \
-    | sed -E 's/<!--[[:space:]]*id:[[:space:]]*([a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+)[[:space:]]*-->/\1/' \
-    | while IFS= read -r RULE_ID; do
-        [[ -z "$RULE_ID" ]] && continue
-        printf '{"ts":"%s","event":"loaded","rule_id":"%s","source":"%s"}\n' \
-          "$TS" "$RULE_ID" "$FILE" >> "$LOG_FILE" 2>/dev/null || true
-      done
-done
+# Dedupe while preserving order.
+seen = set()
+files = [c for c in candidates if not (c in seen or seen.add(c))]
+
+# Match a dotted-slug rule ID, starting with a letter so docstring examples
+# like <!-- id: ... --> don't produce phantom events.
+id_rx = re.compile(r"<!--\s*id:\s*([a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+)\s*-->")
+ts = os.environ["HOOK_TS"]
+log_path = os.environ["HOOK_LOG"]
+
+events = []
+for path in files:
+    if not os.path.isfile(path):
+        continue
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            content = fh.read()
+    except Exception:
+        continue
+    for match in id_rx.finditer(content):
+        rule_id = match.group(1)
+        if rule_id:
+            events.append({"ts": ts, "event": "loaded", "rule_id": rule_id, "source": path})
+
+if events:
+    try:
+        with open(log_path, "a", encoding="utf-8") as fh:
+            for e in events:
+                fh.write(json.dumps(e, separators=(",", ":")) + "\n")
+    except Exception:
+        pass
+PY
 
 # Always approve — this hook only observes.
 echo '{"decision":"approve"}'

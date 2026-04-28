@@ -113,20 +113,32 @@ function aggregate(events: RuleEvent[], known: Set<string>): Map<string, RuleSta
   return stats;
 }
 
-function adherence(stats: Map<string, RuleStats>): { score: number; observed: number } {
+interface AdherenceResult {
+  // null when no judge evidence exists across any rule. `loaded` events are NOT
+  // counted as positive evidence — they only mean a file was scanned, not that
+  // a rule was applied. Real positive signal requires the LLM judge (cited
+  // events) or future Phase 2 code-citation features.
+  score: number | null;
+  observed: number;
+  basis: "judge" | "no-evidence";
+}
+
+function adherence(stats: Map<string, RuleStats>): AdherenceResult {
   let observed = 0;
   let followed = 0;
+  let totalCited = 0;
   for (const s of stats.values()) {
-    const interactions = s.loaded + s.cited + s.violations + s.judged;
-    if (interactions === 0) continue;
-    observed++;
     const negative = s.violations + s.judged;
-    const positive = Math.max(s.loaded, 0) + s.cited;
+    const positive = s.cited;
+    totalCited += positive;
     if (positive + negative === 0) continue;
+    observed++;
     followed += positive / (positive + negative);
   }
-  if (observed === 0) return { score: 0, observed: 0 };
-  return { score: Math.round((followed / observed) * 100), observed };
+  if (totalCited === 0) {
+    return { score: null, observed: 0, basis: "no-evidence" };
+  }
+  return { score: Math.round((followed / observed) * 100), observed, basis: "judge" };
 }
 
 function noTelemetryReport(format: "markdown" | "json"): string {
@@ -146,7 +158,7 @@ function toJsonReport(
   totalEvents: number,
   since: string | null
 ): unknown {
-  const { score, observed } = adherence(stats);
+  const { score, observed, basis } = adherence(stats);
   return {
     generated_at: new Date().toISOString(),
     since,
@@ -154,6 +166,7 @@ function toJsonReport(
     rule_count: stats.size,
     observed_rules: observed,
     adherence_score: score,
+    adherence_basis: basis,
     rules: [...stats.entries()].map(([id, s]) => ({
       id,
       loaded: s.loaded,
@@ -171,7 +184,7 @@ function toMarkdownReport(
   totalEvents: number,
   since: string | null
 ): string {
-  const { score, observed } = adherence(stats);
+  const { score, observed, basis } = adherence(stats);
   const rows = [...stats.entries()].sort(([, a], [, b]) => b.loaded + b.violations - (a.loaded + a.violations));
 
   const hot = rows.filter(([, s]) => s.loaded > 0 && (s.violations + s.judged) === 0);
@@ -182,7 +195,11 @@ function toMarkdownReport(
   out.push("## 🔭 Rule Observability");
   out.push("");
   if (since) out.push(`_Since: \`${since}\`_`);
-  out.push(`_Adherence: **${score}%** across ${observed} observed rules · ${totalEvents} events recorded_`);
+  if (basis === "judge" && score !== null) {
+    out.push(`_Adherence: **${score}%** across ${observed} judge-observed rules · ${totalEvents} events recorded_`);
+  } else {
+    out.push(`_Adherence: **N/A** — enable \`AIKIT_JUDGE=1\` for compliance scoring · ${totalEvents} events recorded_`);
+  }
   out.push("");
 
   if (disputed.length > 0) {

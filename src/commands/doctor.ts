@@ -12,7 +12,7 @@ interface Finding {
 
 interface RuleEvent {
   ts: string;
-  event: "loaded" | "violation" | "cited";
+  event: "loaded" | "violation" | "cited" | "judged_violation";
   rule_id: string;
   source?: string;
   file?: string;
@@ -24,6 +24,7 @@ interface RuleStats {
   loadedCount: number;
   violationCount: number;
   citedCount: number;
+  judgedCount: number;
   lastSeen: string;
   firstSeen: string;
   sources: Set<string>;
@@ -239,12 +240,13 @@ function aggregateStats(events: RuleEvent[], known: Set<string>): Map<string, Ru
     seenIds.add(e.rule_id);
     let s = stats.get(e.rule_id);
     if (!s) {
-      s = { loadedCount: 0, violationCount: 0, citedCount: 0, lastSeen: e.ts, firstSeen: e.ts, sources: new Set() };
+      s = { loadedCount: 0, violationCount: 0, citedCount: 0, judgedCount: 0, lastSeen: e.ts, firstSeen: e.ts, sources: new Set() };
       stats.set(e.rule_id, s);
     }
     if (e.event === "loaded") s.loadedCount++;
     else if (e.event === "violation") s.violationCount++;
     else if (e.event === "cited") s.citedCount++;
+    else if (e.event === "judged_violation") s.judgedCount++;
     if (e.source) s.sources.add(e.source);
     if (e.file) s.sources.add(e.file);
     if (e.ts > s.lastSeen) s.lastSeen = e.ts;
@@ -258,6 +260,7 @@ function aggregateStats(events: RuleEvent[], known: Set<string>): Map<string, Ru
         loadedCount: 0,
         violationCount: 0,
         citedCount: 0,
+        judgedCount: 0,
         lastSeen: "",
         firstSeen: "",
         sources: new Set(),
@@ -269,20 +272,28 @@ function aggregateStats(events: RuleEvent[], known: Set<string>): Map<string, Ru
 }
 
 function classifyRule(s: RuleStats): { bucket: "hot" | "disputed" | "dead" | "unused"; advice: string } {
-  if (s.loadedCount === 0 && s.violationCount === 0) {
-    return { bucket: "dead", advice: "Never loaded or violated — consider removing or rephrasing." };
+  const negative = s.violationCount + s.judgedCount;
+  const interactions = s.loadedCount + s.citedCount + negative;
+
+  if (interactions === 0) {
+    return { bucket: "dead", advice: "Never loaded, cited, or violated — consider removing or rephrasing." };
   }
-  if (s.violationCount > 0 && s.loadedCount > 0) {
-    const ratio = s.violationCount / Math.max(s.loadedCount, 1);
+  // A rule with negatives but no loads is a pattern hit on a rule the agent
+  // never saw — likely a rules-file-presence problem, not an adherence issue.
+  if (s.loadedCount === 0 && s.citedCount === 0) {
+    return { bucket: "unused", advice: "Pattern violations recorded but rule not loaded — check rule file presence." };
+  }
+  if (negative > 0) {
+    // Compare negatives to engaged signal (cited > loaded as "rule was actually
+    // applied"). Fall back to loadedCount if no cited evidence is available.
+    const denominator = s.citedCount > 0 ? s.citedCount + negative : Math.max(s.loadedCount, 1);
+    const ratio = negative / denominator;
     if (ratio > 0.3) {
       return { bucket: "disputed", advice: "Frequently violated — strengthen with IMPORTANT/YOU MUST or move to a hook." };
     }
     return { bucket: "hot", advice: "Active rule with occasional violations — keep monitoring." };
   }
-  if (s.loadedCount > 0) {
-    return { bucket: "hot", advice: "Loaded and obeyed — keep." };
-  }
-  return { bucket: "unused", advice: "Pattern violations recorded but rule not loaded — check rule file presence." };
+  return { bucket: "hot", advice: "Loaded and obeyed — keep." };
 }
 
 function printRulesReport(stats: Map<string, RuleStats>, totalEvents: number): void {

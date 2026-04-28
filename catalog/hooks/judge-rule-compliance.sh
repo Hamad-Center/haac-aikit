@@ -132,10 +132,29 @@ req = urllib.request.Request(
     },
 )
 
+def log_error(reason):
+    # Errors land in a sibling log so the user (who explicitly opted in via
+    # AIKIT_JUDGE=1 and is paying for verdicts) can see why a turn produced
+    # nothing. Stays out of events.jsonl to keep the rule-event stream clean.
+    try:
+        err_path = os.path.join(os.path.dirname(log_path) or ".", "judge-errors.log")
+        os.makedirs(os.path.dirname(err_path) or ".", exist_ok=True)
+        with open(err_path, "a", encoding="utf-8") as eh:
+            eh.write(f"{ts}  {reason}\n")
+    except Exception:
+        pass
+
 try:
     with urllib.request.urlopen(req, timeout=15) as resp:
         body = json.loads(resp.read().decode("utf-8"))
-except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+except urllib.error.HTTPError as e:
+    log_error(f"http {e.code}: {e.reason}")
+    sys.exit(0)
+except urllib.error.URLError as e:
+    log_error(f"url-error: {e.reason}")
+    sys.exit(0)
+except (TimeoutError, json.JSONDecodeError) as e:
+    log_error(f"transport: {type(e).__name__}: {e}")
     sys.exit(0)
 
 # Extract the model's text content.
@@ -145,10 +164,12 @@ verdict_text = "\n".join(text_chunks).strip()
 # Pull out the first {...} JSON object (Haiku usually emits clean JSON, but be defensive).
 match = re.search(r"\{.*\}", verdict_text, re.DOTALL)
 if not match:
+    log_error(f"no JSON object in model response (len={len(verdict_text)})")
     sys.exit(0)
 try:
     verdicts = json.loads(match.group(0)).get("verdicts", [])
-except Exception:
+except Exception as e:
+    log_error(f"verdicts json parse failed: {e}")
     sys.exit(0)
 
 # Append events. cited → "cited", violated → "judged_violation", irrelevant → skip.

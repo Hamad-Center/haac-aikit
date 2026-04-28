@@ -58,7 +58,14 @@ export async function runLearn(argv: CliArgs): Promise<void> {
   }
 
   process.stdout.write(kleur.dim(`Fetching last ${limit} merged PRs...\n`));
-  const prs = await fetchMergedPRs(limit);
+  let prs: PR[];
+  try {
+    prs = await fetchMergedPRs(limit);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message.split("\n")[0] : String(err);
+    process.stderr.write(kleur.red(`Failed to list PRs via gh: ${msg}\n`));
+    process.exit(1);
+  }
   if (prs.length === 0) {
     process.stdout.write(kleur.yellow("No merged PRs found in this repo.\n"));
     return;
@@ -66,9 +73,18 @@ export async function runLearn(argv: CliArgs): Promise<void> {
 
   process.stdout.write(kleur.dim(`Pulling review comments from ${prs.length} PRs...\n`));
   const comments: ReviewComment[] = [];
+  let skipped = 0;
   for (const pr of prs) {
     const prComments = await fetchReviewComments(pr.number);
+    if (prComments === null) {
+      skipped++;
+      continue;
+    }
     for (const c of prComments) comments.push({ body: c, prNumber: pr.number });
+  }
+
+  if (skipped > 0) {
+    process.stdout.write(kleur.yellow(`  warn: ${skipped}/${prs.length} PRs skipped due to gh fetch errors\n`));
   }
 
   if (comments.length === 0) {
@@ -103,7 +119,10 @@ async function fetchMergedPRs(limit: number): Promise<PR[]> {
   return JSON.parse(stdout) as PR[];
 }
 
-async function fetchReviewComments(prNumber: number): Promise<string[]> {
+// Returns null on transport failure (so the caller can distinguish a real
+// "no comments" PR from a PR we couldn't fetch). Returns [] for genuinely
+// empty PRs.
+async function fetchReviewComments(prNumber: number): Promise<string[] | null> {
   try {
     const { stdout } = await runCmd(
       "gh",
@@ -119,7 +138,7 @@ async function fetchReviewComments(prNumber: number): Promise<string[]> {
     for (const c of data.comments ?? []) if (c.body) out.push(c.body);
     return out;
   } catch {
-    return [];
+    return null;
   }
 }
 
