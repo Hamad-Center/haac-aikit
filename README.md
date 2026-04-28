@@ -34,6 +34,31 @@ haac-aikit gives you the curated baseline like other kits do (skills, hooks, age
 2. **Dialect translation** — Cursor's MDC, Claude's emphasis tokens, Aider's imperative phrasing all want different things. Same canonical AGENTS.md, reformatted per tool.
 3. **`aikit learn`** — mines your team's PR review comments for repeated corrections and proposes them as new rules.
 
+## What changes after you install it
+
+**Right after `aikit init`:**
+
+- One `AGENTS.md` becomes the source of truth for every AI tool you use. You stop maintaining four copies of the same rules.
+- Force-pushing to `main`, committing secrets, reading `.env*` / `.ssh/` / `.aws/` files, `rm -rf` outside the project, and about a dozen other footguns are blocked at the hook level. They don't depend on the AI cooperating — the hook fires before the tool call.
+- 18 process skills (TDD, brainstorming, debugging, etc.) sit in `.claude/skills/` and load on demand. Always-on cost is roughly 100 tokens per skill, so your context window stays clean.
+- Per-PR safety: a `gitleaks` workflow ships in `.github/workflows/` so secrets caught at commit time don't slip through code review either.
+
+**After a week or two of use:**
+
+- `aikit doctor --rules` shows you which rules fire often, which fire and get violated, and which never come up. You delete the dead ones, strengthen the disputed ones, and stop guessing.
+- The `.aikit/events.jsonl` log accumulates a real record of every rule load and pattern violation — local, gitignored, never uploaded. If you opt into the LLM judge it also includes per-turn cited / violated verdicts.
+
+**After a month:**
+
+- `aikit learn --limit=30` mines your merged PRs for repeated review comments and proposes new rules. Patterns like "we always validate at the boundary" or "use named exports here" that used to live only in code review get codified without anyone hand-typing them.
+- The optional GitHub Actions workflow posts a sticky PR comment with a rule-adherence score, so regressions across releases are visible at PR-review time.
+
+**What you don't get locked into:**
+
+- AGENTS.md is portable — Cursor, Copilot, Codex, Aider, and Gemini all read it. Switching tools doesn't mean rewriting your rules.
+- The catalog (skills, hooks, agents) is just markdown and shell scripts under `.claude/`. Take it and walk away whenever — haac-aikit never reaches back into your repo and there's no SaaS to cancel.
+- All telemetry is local. The opt-in LLM judge calls the Anthropic API only with your own key, only on `Stop` events, and you can pull the env var anytime.
+
 ## What you get
 
 ### Minimal scope
