@@ -129,4 +129,38 @@ describe("aikit doctor --rules", () => {
     expect(stdout).toContain("Hot rules");
     expect(stdout).toContain("2 loads");
   });
+
+  it("surfaces malformed-line count when log is corrupt", async () => {
+    writeAgentsMd(["code-style.no-any"]);
+    mkdirSync(".aikit", { recursive: true });
+    writeFileSync(".aikit/events.jsonl",
+      `{"ts":"2026-04-29T00:00:00Z","event":"loaded","rule_id":"code-style.no-any"}\n` +
+      `not json\n` +
+      `also not json\n` +
+      `{"missing":"fields"}\n`
+    );
+
+    await runDoctor({ _: ["doctor"], rules: true } as never);
+
+    expect(stdout).toContain("3 malformed line(s)");
+  });
+
+  it("surfaces rule_compile_error events from broken regex patterns", async () => {
+    writeAgentsMd(["code-style.bad-regex"]);
+    writeEvents([
+      {
+        ts: "2026-04-29T00:00:00Z",
+        event: "rule_compile_error",
+        rule_id: "code-style.bad-regex",
+        pattern: "(unclosed",
+        error: "missing closing paren",
+      },
+    ]);
+
+    await runDoctor({ _: ["doctor"], rules: true } as never);
+
+    expect(stdout).toContain("Rule pattern compile errors");
+    expect(stdout).toContain("code-style.bad-regex");
+    expect(stdout).toContain("missing closing paren");
+  });
 });

@@ -31,7 +31,7 @@ export async function runReport(argv: CliArgs): Promise<void> {
     return;
   }
 
-  const events = parseEvents(readFileSync(EVENTS_PATH, "utf8"));
+  const { events, malformed } = parseEvents(readFileSync(EVENTS_PATH, "utf8"));
   if (events.length === 0) {
     process.stdout.write(noTelemetryReport(format));
     return;
@@ -44,26 +44,28 @@ export async function runReport(argv: CliArgs): Promise<void> {
   const stats = aggregate(filtered, known);
 
   if (format === "json") {
-    process.stdout.write(JSON.stringify(toJsonReport(stats, filtered.length, since), null, 2) + "\n");
+    process.stdout.write(JSON.stringify(toJsonReport(stats, filtered.length, since, malformed), null, 2) + "\n");
     return;
   }
 
-  process.stdout.write(toMarkdownReport(stats, filtered.length, since));
+  process.stdout.write(toMarkdownReport(stats, filtered.length, since, malformed));
 }
 
-function parseEvents(content: string): RuleEvent[] {
+function parseEvents(content: string): { events: RuleEvent[]; malformed: number } {
   const out: RuleEvent[] = [];
+  let malformed = 0;
   for (const line of content.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     try {
       const parsed = JSON.parse(trimmed) as RuleEvent;
       if (parsed.rule_id && parsed.event) out.push(parsed);
+      else malformed++;
     } catch {
-      // best-effort
+      malformed++;
     }
   }
-  return out;
+  return { events: out, malformed };
 }
 
 function collectKnownRuleIds(): Set<string> {
@@ -156,13 +158,15 @@ function noTelemetryReport(format: "markdown" | "json"): string {
 function toJsonReport(
   stats: Map<string, RuleStats>,
   totalEvents: number,
-  since: string | null
+  since: string | null,
+  malformedLines: number
 ): unknown {
   const { score, observed, basis } = adherence(stats);
   return {
     generated_at: new Date().toISOString(),
     since,
     total_events: totalEvents,
+    malformed_lines: malformedLines,
     rule_count: stats.size,
     observed_rules: observed,
     adherence_score: score,
@@ -182,7 +186,8 @@ function toJsonReport(
 function toMarkdownReport(
   stats: Map<string, RuleStats>,
   totalEvents: number,
-  since: string | null
+  since: string | null,
+  malformedLines: number
 ): string {
   const { score, observed, basis } = adherence(stats);
   const rows = [...stats.entries()].sort(([, a], [, b]) => b.loaded + b.violations - (a.loaded + a.violations));
@@ -228,6 +233,11 @@ function toMarkdownReport(
     for (const [id] of dead) {
       out.push(`- \`${id}\` — consider removing or rephrasing`);
     }
+    out.push("");
+  }
+
+  if (malformedLines > 0) {
+    out.push(`> ⚠️  ${malformedLines} malformed line(s) in \`.aikit/events.jsonl\` were skipped — adherence reflects only parsed events.`);
     out.push("");
   }
 

@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "catalog:check": "node scripts/catalog-check.js",
-    "prepublishOnly": "pnpm build && pnpm typecheck"
+    "prepublishOnly": "npm run build && npm run typecheck && npm test"
   },
   "dependencies": {
     "@clack/prompts": "^0.9.1",

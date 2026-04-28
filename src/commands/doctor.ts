@@ -12,12 +12,14 @@ interface Finding {
 
 interface RuleEvent {
   ts: string;
-  event: "loaded" | "violation" | "cited" | "judged_violation";
+  event: "loaded" | "violation" | "cited" | "judged_violation" | "rule_compile_error";
   rule_id: string;
   source?: string;
   file?: string;
   severity?: string;
   line?: number;
+  pattern?: string;
+  error?: string;
 }
 
 interface RuleStats {
@@ -183,7 +185,7 @@ function runRulesReport(): void {
     return;
   }
 
-  const events = parseEvents(readFileSync(eventsPath, "utf8"));
+  const { events, malformed } = parseEvents(readFileSync(eventsPath, "utf8"));
   if (events.length === 0) {
     process.stdout.write(kleur.yellow("Telemetry log is empty. No rule events recorded yet.\n"));
     return;
@@ -191,23 +193,50 @@ function runRulesReport(): void {
 
   const known = collectKnownRuleIds();
   const stats = aggregateStats(events, known);
+  const compileErrors = collectCompileErrors(events);
 
-  printRulesReport(stats, events.length);
+  printRulesReport(stats, events.length, malformed, compileErrors);
 }
 
-function parseEvents(content: string): RuleEvent[] {
+interface CompileError {
+  ruleId: string;
+  pattern: string;
+  error: string;
+  ts: string;
+}
+
+function collectCompileErrors(events: RuleEvent[]): CompileError[] {
+  const latestByRule = new Map<string, CompileError>();
+  for (const e of events) {
+    if (e.event !== "rule_compile_error") continue;
+    const existing = latestByRule.get(e.rule_id);
+    if (!existing || e.ts > existing.ts) {
+      latestByRule.set(e.rule_id, {
+        ruleId: e.rule_id,
+        pattern: e.pattern ?? "",
+        error: e.error ?? "(no detail)",
+        ts: e.ts,
+      });
+    }
+  }
+  return [...latestByRule.values()];
+}
+
+function parseEvents(content: string): { events: RuleEvent[]; malformed: number } {
   const out: RuleEvent[] = [];
+  let malformed = 0;
   for (const line of content.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     try {
       const parsed = JSON.parse(trimmed) as RuleEvent;
       if (parsed.rule_id && parsed.event) out.push(parsed);
+      else malformed++;
     } catch {
-      // Skip malformed lines — telemetry is best-effort.
+      malformed++;
     }
   }
-  return out;
+  return { events: out, malformed };
 }
 
 function collectKnownRuleIds(): Set<string> {
@@ -296,7 +325,7 @@ function classifyRule(s: RuleStats): { bucket: "hot" | "disputed" | "dead" | "un
   return { bucket: "hot", advice: "Loaded and obeyed — keep." };
 }
 
-function printRulesReport(stats: Map<string, RuleStats>, totalEvents: number): void {
+function printRulesReport(stats: Map<string, RuleStats>, totalEvents: number, malformed: number, compileErrors: CompileError[]): void {
   const rows: Array<{ id: string; stats: RuleStats; bucket: string; advice: string }> = [];
   for (const [id, s] of stats) {
     const cls = classifyRule(s);
@@ -347,4 +376,20 @@ function printRulesReport(stats: Map<string, RuleStats>, totalEvents: number): v
   }
 
   process.stdout.write(kleur.dim(`Hot: ${hot.length}  ·  Disputed: ${disputed.length}  ·  Dead: ${dead.length}  ·  Unmatched: ${unused.length}\n`));
+
+  if (compileErrors.length > 0) {
+    process.stdout.write(kleur.red(`\n✗ Rule pattern compile errors (${compileErrors.length})\n`));
+    for (const ce of compileErrors) {
+      process.stdout.write(`  ${kleur.bold(ce.ruleId)} — ${kleur.dim(ce.error)}\n`);
+      if (ce.pattern) process.stdout.write(`    pattern: ${kleur.dim(ce.pattern)}\n`);
+    }
+    process.stdout.write(kleur.dim("  Fix these regex patterns in .claude/aikit-rules.json.\n"));
+  }
+
+  if (malformed > 0) {
+    process.stdout.write(
+      kleur.yellow(`\n⚠  ${malformed} malformed line(s) in .aikit/events.jsonl were skipped.\n`) +
+        kleur.dim("   This usually means a hook crashed mid-write. Adherence numbers reflect only the parsed lines.\n")
+    );
+  }
 }

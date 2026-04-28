@@ -103,7 +103,14 @@ for rule in cfg.get("rules", []):
         continue
     try:
         rx = re.compile(pat, re.MULTILINE)
-    except re.error:
+    except re.error as compile_err:
+        events.append({
+            "ts": ts,
+            "event": "rule_compile_error",
+            "rule_id": rid,
+            "pattern": pat[:200],
+            "error": str(compile_err)[:200],
+        })
         continue
     for m in rx.finditer(content):
         line = content.count("\n", 0, m.start()) + 1
