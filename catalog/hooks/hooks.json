@@ -40,6 +40,22 @@
             "type": "command",
             "command": "bash .claude/hooks/format-on-save.sh",
             "description": "Auto-format after file write"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-pattern-violations.sh",
+            "description": "Telemetry: pattern-check just-written file against .claude/aikit-rules.json"
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/log-rule-event.sh",
+            "description": "Telemetry: record which rule IDs loaded this session"
           }
         ]
       }

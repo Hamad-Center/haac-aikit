@@ -16,10 +16,13 @@ paths:
 
 ## Conventions for files matching the `paths:` glob
 
-- Replace this section with the rules you want Claude to follow when editing
-  TypeScript source files.
-- Keep rules concrete and verifiable: "Use `unknown` + type guards, never
-  `any`" beats "Be careful with types".
+<!-- Rule IDs let `aikit doctor --rules` track each rule's fire-rate and
+     violation-rate over time. Match the ID exactly in `aikit-rules.json` if
+     you want pattern-based violation detection on top of the load-time log. -->
+
+- <!-- id: code-style.no-default-export --> Use named exports, not `export default`.
+- <!-- id: code-style.no-any --> Use `unknown` + type guards instead of `any`.
+- <!-- id: code-style.no-console-log --> No `console.log` in production code (remove before commit).
 - Prefix the most load-bearing rules with `IMPORTANT:` or `YOU MUST` —
   Anthropic guidance says emphasis improves adherence.
 

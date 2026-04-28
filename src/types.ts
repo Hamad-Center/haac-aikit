@@ -77,4 +77,5 @@ export interface CliArgs {
   preset?: Scope;
   help: boolean;
   version: boolean;
+  rules?: boolean;
 }

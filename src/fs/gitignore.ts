@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 const ENTRIES = [
   ".claude/settings.local.json",
   ".claude/backups/",
+  ".aikit/",
   ".env.local",
   ".env*.local",
 ];

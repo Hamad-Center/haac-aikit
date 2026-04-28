@@ -53,6 +53,15 @@ export async function runDiff(argv: CliArgs): Promise<void> {
         drifted.push(refPath);
       }
     }
+    const rulesPath = ".claude/aikit-rules.json";
+    if (!existsSync(rulesPath)) {
+      missing.push(rulesPath);
+    } else {
+      const fresh = catalog.aikitRulesJson();
+      if (readFileSync(rulesPath, "utf8") !== fresh) {
+        drifted.push(rulesPath);
+      }
+    }
   }
 
   if (missing.length === 0 && drifted.length === 0) {

@@ -10,7 +10,32 @@ interface Finding {
   message: string;
 }
 
+interface RuleEvent {
+  ts: string;
+  event: "loaded" | "violation" | "cited";
+  rule_id: string;
+  source?: string;
+  file?: string;
+  severity?: string;
+  line?: number;
+}
+
+interface RuleStats {
+  loadedCount: number;
+  violationCount: number;
+  citedCount: number;
+  lastSeen: string;
+  firstSeen: string;
+  sources: Set<string>;
+}
+
 export async function runDoctor(argv: CliArgs): Promise<void> {
+  // --rules subcommand: rule-effectiveness telemetry summary
+  if (argv.rules) {
+    runRulesReport();
+    return;
+  }
+
   const findings: Finding[] = [];
 
   // 1. Config exists
@@ -144,4 +169,171 @@ function printFindings(findings: Finding[]): void {
   } else {
     process.stdout.write(kleur.green(`All ${oks.length} checks passed.\n`));
   }
+}
+
+function runRulesReport(): void {
+  const eventsPath = ".aikit/events.jsonl";
+  if (!existsSync(eventsPath)) {
+    process.stdout.write(
+      kleur.yellow("No telemetry yet. ") +
+        "Hooks log to .aikit/events.jsonl on first session.\n" +
+        "Run a Claude Code session in this repo, then re-run `aikit doctor --rules`.\n"
+    );
+    return;
+  }
+
+  const events = parseEvents(readFileSync(eventsPath, "utf8"));
+  if (events.length === 0) {
+    process.stdout.write(kleur.yellow("Telemetry log is empty. No rule events recorded yet.\n"));
+    return;
+  }
+
+  const known = collectKnownRuleIds();
+  const stats = aggregateStats(events, known);
+
+  printRulesReport(stats, events.length);
+}
+
+function parseEvents(content: string): RuleEvent[] {
+  const out: RuleEvent[] = [];
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const parsed = JSON.parse(trimmed) as RuleEvent;
+      if (parsed.rule_id && parsed.event) out.push(parsed);
+    } catch {
+      // Skip malformed lines — telemetry is best-effort.
+    }
+  }
+  return out;
+}
+
+function collectKnownRuleIds(): Set<string> {
+  // Scan AGENTS.md and .claude/rules/*.md for declared rule IDs.
+  const ids = new Set<string>();
+  const candidates = ["AGENTS.md", "CLAUDE.md", ".claude/CLAUDE.md"];
+  if (existsSync(".claude/rules")) {
+    for (const f of readdirSync(".claude/rules")) {
+      if (f.endsWith(".md")) candidates.push(join(".claude/rules", f));
+    }
+  }
+  // Require a dotted slug starting with a letter so docstring examples like
+  // `<!-- id: ... -->` don't produce phantom rule entries.
+  const idRx = /<!--\s*id:\s*([a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+)\s*-->/g;
+  for (const path of candidates) {
+    if (!existsSync(path)) continue;
+    const content = readFileSync(path, "utf8");
+    for (const m of content.matchAll(idRx)) {
+      if (m[1]) ids.add(m[1]);
+    }
+  }
+  return ids;
+}
+
+function aggregateStats(events: RuleEvent[], known: Set<string>): Map<string, RuleStats> {
+  const stats = new Map<string, RuleStats>();
+  const seenIds = new Set<string>([...known]);
+
+  for (const e of events) {
+    seenIds.add(e.rule_id);
+    let s = stats.get(e.rule_id);
+    if (!s) {
+      s = { loadedCount: 0, violationCount: 0, citedCount: 0, lastSeen: e.ts, firstSeen: e.ts, sources: new Set() };
+      stats.set(e.rule_id, s);
+    }
+    if (e.event === "loaded") s.loadedCount++;
+    else if (e.event === "violation") s.violationCount++;
+    else if (e.event === "cited") s.citedCount++;
+    if (e.source) s.sources.add(e.source);
+    if (e.file) s.sources.add(e.file);
+    if (e.ts > s.lastSeen) s.lastSeen = e.ts;
+    if (e.ts < s.firstSeen) s.firstSeen = e.ts;
+  }
+
+  // Surface known-but-never-fired rules so they appear in the "dead" bucket.
+  for (const id of seenIds) {
+    if (!stats.has(id)) {
+      stats.set(id, {
+        loadedCount: 0,
+        violationCount: 0,
+        citedCount: 0,
+        lastSeen: "",
+        firstSeen: "",
+        sources: new Set(),
+      });
+    }
+  }
+
+  return stats;
+}
+
+function classifyRule(s: RuleStats): { bucket: "hot" | "disputed" | "dead" | "unused"; advice: string } {
+  if (s.loadedCount === 0 && s.violationCount === 0) {
+    return { bucket: "dead", advice: "Never loaded or violated — consider removing or rephrasing." };
+  }
+  if (s.violationCount > 0 && s.loadedCount > 0) {
+    const ratio = s.violationCount / Math.max(s.loadedCount, 1);
+    if (ratio > 0.3) {
+      return { bucket: "disputed", advice: "Frequently violated — strengthen with IMPORTANT/YOU MUST or move to a hook." };
+    }
+    return { bucket: "hot", advice: "Active rule with occasional violations — keep monitoring." };
+  }
+  if (s.loadedCount > 0) {
+    return { bucket: "hot", advice: "Loaded and obeyed — keep." };
+  }
+  return { bucket: "unused", advice: "Pattern violations recorded but rule not loaded — check rule file presence." };
+}
+
+function printRulesReport(stats: Map<string, RuleStats>, totalEvents: number): void {
+  const rows: Array<{ id: string; stats: RuleStats; bucket: string; advice: string }> = [];
+  for (const [id, s] of stats) {
+    const cls = classifyRule(s);
+    rows.push({ id, stats: s, bucket: cls.bucket, advice: cls.advice });
+  }
+
+  const hot = rows.filter((r) => r.bucket === "hot");
+  const disputed = rows.filter((r) => r.bucket === "disputed");
+  const dead = rows.filter((r) => r.bucket === "dead");
+  const unused = rows.filter((r) => r.bucket === "unused");
+
+  process.stdout.write(kleur.bold("Rule observability — ") + kleur.dim(`${totalEvents} events across ${rows.length} rules`) + "\n\n");
+
+  if (hot.length > 0) {
+    process.stdout.write(kleur.green("✓ Hot rules (working as intended)\n"));
+    for (const r of hot) {
+      const v = r.stats.violationCount > 0 ? kleur.yellow(` ${r.stats.violationCount} violations`) : "";
+      process.stdout.write(`  ${kleur.bold(r.id)} — ${r.stats.loadedCount} loads${v}\n`);
+    }
+    process.stdout.write("\n");
+  }
+
+  if (disputed.length > 0) {
+    process.stdout.write(kleur.yellow("⚠ Disputed rules (>30% violation rate)\n"));
+    for (const r of disputed) {
+      process.stdout.write(`  ${kleur.bold(r.id)} — ${r.stats.loadedCount} loads, ${r.stats.violationCount} violations\n`);
+      process.stdout.write(`    ${kleur.dim(r.advice)}\n`);
+    }
+    process.stdout.write("\n");
+  }
+
+  if (dead.length > 0) {
+    process.stdout.write(kleur.red("✗ Dead rules (never observed)\n"));
+    for (const r of dead) {
+      process.stdout.write(`  ${kleur.bold(r.id)}\n`);
+      process.stdout.write(`    ${kleur.dim(r.advice)}\n`);
+    }
+    process.stdout.write("\n");
+  }
+
+  if (unused.length > 0) {
+    process.stdout.write(kleur.yellow("⚠ Pattern hits without rule load\n"));
+    for (const r of unused) {
+      process.stdout.write(`  ${kleur.bold(r.id)} — ${r.stats.violationCount} pattern hits\n`);
+      process.stdout.write(`    ${kleur.dim(r.advice)}\n`);
+    }
+    process.stdout.write("\n");
+  }
+
+  process.stdout.write(kleur.dim(`Hot: ${hot.length}  ·  Disputed: ${disputed.length}  ·  Dead: ${dead.length}  ·  Unmatched: ${unused.length}\n`));
 }

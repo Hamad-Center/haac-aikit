@@ -13,13 +13,14 @@ USAGE
   aikit [command] [flags]       (if installed globally)
 
 COMMANDS
-  (default)      Interactive wizard — drop a complete AI setup into this repo
-  sync           Regenerate per-tool files from .aikitrc.json (idempotent)
-  update         Pull latest templates; show diff; prompt before writing
-  diff           Show drift between current state and a fresh generation
-  add <item>     Add a single skill, command, agent, or hook
-  list           Show installed items + available catalog
-  doctor         Sanity-check: schema, triggers, broken links
+  (default)         Interactive wizard — drop a complete AI setup into this repo
+  sync              Regenerate per-tool files from .aikitrc.json (idempotent)
+  update            Pull latest templates; show diff; prompt before writing
+  diff              Show drift between current state and a fresh generation
+  add <item>        Add a single skill, command, agent, or hook
+  list              Show installed items + available catalog
+  doctor            Sanity-check: schema, triggers, broken links
+  doctor --rules    Rule observability report — which rules fire, are followed, are dead
 
 FLAGS
   --yes, -y           Accept all defaults
@@ -36,7 +37,7 @@ FLAGS
 
 async function main(): Promise<void> {
   const argv = mri<CliArgs>(process.argv.slice(2), {
-    boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version"],
+    boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules"],
     string: ["config", "tools", "preset"],
     alias: { y: "yes", h: "help", v: "version" },
     default: {
@@ -47,6 +48,7 @@ async function main(): Promise<void> {
       "no-color": false,
       help: false,
       version: false,
+      rules: false,
     },
   });
 
