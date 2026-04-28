@@ -22,6 +22,7 @@ COMMANDS
   doctor            Sanity-check: schema, triggers, broken links
   doctor --rules    Rule observability report — which rules fire, are followed, are dead
   report            Markdown / JSON rule-adherence summary (for PR comments / CI)
+  learn             Mine recent PR review comments for repeated corrections; propose rules
 
 FLAGS
   --yes, -y           Accept all defaults
@@ -39,7 +40,7 @@ FLAGS
 async function main(): Promise<void> {
   const argv = mri<CliArgs>(process.argv.slice(2), {
     boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules"],
-    string: ["config", "tools", "preset", "format", "since"],
+    string: ["config", "tools", "preset", "format", "since", "limit"],
     alias: { y: "yes", h: "help", v: "version" },
     default: {
       yes: false,
@@ -108,6 +109,11 @@ async function main(): Promise<void> {
     case "report": {
       const { runReport } = await import("./commands/report.js");
       await runReport(argv);
+      break;
+    }
+    case "learn": {
+      const { runLearn } = await import("./commands/learn.js");
+      await runLearn(argv);
       break;
     }
     default:
