@@ -1,6 +1,6 @@
 {
   "name": "haac-aikit",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "The batteries-included AI-agentic-coding kit. One command drops a complete, opinionated, cross-tool setup into any repo.",
   "type": "module",
   "bin": {
