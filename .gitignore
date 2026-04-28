@@ -3,3 +3,8 @@ dist/
 *.tgz
 .env
 .env.*
+
+# Claude Code per-developer files (see docs/claude-md-reference.md §2, §8)
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/.credentials.json
