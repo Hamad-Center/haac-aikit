@@ -3,7 +3,7 @@ import mri from "mri";
 import { isInteractive } from "./detect/isCI.js";
 import type { CliArgs } from "./types.js";
 
-const VERSION = "0.2.0";
+const VERSION = "0.3.0";
 
 const HELP = `
 haac-aikit — the batteries-included AI-agentic-coding kit
