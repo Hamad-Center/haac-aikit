@@ -21,17 +21,22 @@ This repo dogfoods its own conventions: `AGENTS.md` is the single source of trut
 Run a single test: `npx vitest run test/path.test.ts -t "name"`.
 
 ## Project layout
-- `src/cli.ts`       — entry point; routes 7 commands (`init`, `sync`, `update`, `diff`, `add`, `list`, `doctor`)
-- `src/commands/`    — one file per command; loaded via dynamic `import()`
-- `src/render/`      — BEGIN/END marker engine (4 dialects: markdown, JSON, YAML, shell)
-- `src/catalog/`     — runtime loader for `catalog/` templates
-- `src/detect/`      — git/CI state detection (guards destructive writes)
-- `src/fs/`          — atomic file I/O, gitignore management, config read/write
-- `src/types.ts`     — `AikitConfig`, `Tool`, `Scope`, `Integration`, `ProjectShape`
-- `src/wizard.ts`    — `@clack/prompts` interactive setup
-- `catalog/`         — shipped templates (rules, skills, agents, hooks, ci, mcp, settings)
-- `test/`            — vitest specs (co-located by feature)
-- `scripts/`         — repo tooling (`catalog-check.js`, etc.)
+- `src/cli.ts`           — entry point; routes 9 commands (`init`, `sync`, `update`, `diff`, `add`, `list`, `doctor`, `report`, `learn`)
+- `src/commands/`        — one file per command; loaded via dynamic `import()`
+- `src/render/`          — BEGIN/END marker engine (4 dialects: markdown, JSON, YAML, shell)
+- `src/render/dialects/` — Phase-2 per-tool translators (Cursor MDC today; Claude/Aider/Copilot/Gemini queued)
+- `src/catalog/`         — runtime loader for `catalog/` templates; exports `CATALOG_ROOT` resolved via walk-up search
+- `src/detect/`          — git/CI state detection (guards destructive writes)
+- `src/fs/`              — atomic file I/O, gitignore management, config read/write
+- `src/types.ts`         — `AikitConfig`, `Tool`, `Scope`, `Integration`, `ProjectShape`, `CliArgs`
+- `src/wizard.ts`        — `@clack/prompts` interactive setup
+- `catalog/rules/`       — AGENTS.md template, per-tool shims, `aikit-rules.json` (pattern config), `claude-rules/example.md`
+- `catalog/hooks/`       — bash hooks: safety (block-*) + telemetry (log-rule-event, check-pattern-violations, judge-rule-compliance)
+- `catalog/docs/`        — `claude-md-reference.md` shipped to downstream users at scope ≥ standard
+- `catalog/{skills,agents,commands,ci,mcp,settings,devcontainer,husky,plugin}/` — other shipped artefacts
+- `test/`                — vitest specs (co-located by feature)
+- `docs/`                — project-internal docs: observability/dialects/learn deep dives, claude-md-reference
+- `scripts/`             — repo tooling (`catalog-check.js`, etc.)
 
 ## Code style
 - **Named exports only** — no `export default`.
@@ -74,11 +79,19 @@ The CLI itself writes only inside the target repo and respects `--dry-run` / `--
 - **AGENTS.md ≤200 lines.** Anthropic best-practice limit (and a self-imposed catalog rule). Push verbose docs into `docs/` or `catalog/skills/`.
 - **Headless mode.** `--yes` + non-interactive stdin treats `init` as the default command. Tests covering CI invocation must exercise this path.
 - **Tier system.** Skills are tiered: `tier1` (always-on), `tier2` (opt-in), `tier3` (custom). Don't promote tier2 → tier1 without considering token cost — every always-on skill is paid context for every user.
+- **Telemetry hooks must never block the parent tool call.** `log-rule-event.sh`, `check-pattern-violations.sh`, and `judge-rule-compliance.sh` always echo `{"decision":"approve"}` and exit 0, even on internal errors. The `2>/dev/null || true` and `trap '... approve ...' EXIT` patterns are load-bearing — don't remove them.
+- **Rule IDs follow `topic.slug` format.** Regex `[a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+`. Required: starts with a letter, contains at least one dot. Single-segment slugs (`foo`) and dotless examples (`...`) are rejected by design — prevents docstring examples from producing phantom telemetry events.
+- **`adherence_score` may be `null`.** `aikit report` returns `null` with `basis: "no-evidence"` when no `cited` events exist (i.e. the LLM judge isn't enabled). Don't fall back to load-counts as positive evidence; that was the pre-fix bug from commit 96844ee.
+- **JSON output from hooks goes through `json.dumps`.** `printf` interpolation of arbitrary file paths produces invalid JSONL when paths contain `"` or `\`. The fix from cc70709 moved all event construction into Python.
 
 ## When compacting
 Always preserve: the full list of files modified this session, any failing test names + error messages, and the current task. (Anthropic guidance: nested CLAUDE.md files don't re-inject after `/compact` — only this root file does.)
 
 ## Further reading
-- `docs/claude-md-reference.md` — full 2026 reference for CLAUDE.md/memory features and the rationale for this repo's setup.
+- `docs/README.md` — index of project-internal docs.
+- `docs/observability.md` — deep dive on the rule observability loop (Phase 1).
+- `docs/dialects.md` — dialect translation system (Phase 2).
+- `docs/learn.md` — `aikit learn` design, clustering algorithm, tuning knobs (Phase 3).
+- `docs/claude-md-reference.md` — full 2026 reference for CLAUDE.md/memory features.
 - `.claude/rules/markers.md` — path-scoped rule for the marker engine (loads only when editing `src/render/**` or `catalog/**.tmpl`).
 <!-- END:haac-aikit -->

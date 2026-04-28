@@ -233,9 +233,74 @@ When you run `npx haac-aikit init` and select `claude` as a tool:
 | `.claude/settings.json` | ✓ | | Permissions allow/deny/ask matrix. |
 | `docs/claude-md-reference.md` | | ✓ | This file. Reference for your team. |
 | `.claude/rules/example.md` | | ✓ | Starter path-scoped rule — customise or delete. |
+| `.claude/aikit-rules.json` | | ✓ | Pattern-check config for the observability hooks. |
+| `.claude/hooks/log-rule-event.sh` | | ✓ | InstructionsLoaded telemetry — logs which rule IDs loaded. |
+| `.claude/hooks/check-pattern-violations.sh` | | ✓ | PostToolUse pattern check — logs violations from `aikit-rules.json`. |
+| `.claude/hooks/judge-rule-compliance.sh` | | ✓ | Opt-in LLM judge (Stop/SubagentStop). Requires `AIKIT_JUDGE=1` + `ANTHROPIC_API_KEY`. |
 
 `AGENTS.md` is the single source of truth, automatically read by Cursor,
 Copilot, Codex, Aider, Gemini CLI, Windsurf, and Claude Code.
+
+---
+
+## 11. haac-aikit extensions on top of Anthropic's standard features
+
+The standard CLAUDE.md / `.claude/rules/` mechanism is one-way: you write rules, Claude reads them, you hope. haac-aikit adds three feedback loops on top.
+
+### 11.1 Rule IDs
+
+Add a stable HTML-comment ID next to any rule:
+
+```markdown
+- <!-- id: code-style.no-any --> Use `unknown` and type guards, not `any`.
+```
+
+The ID format is `topic.slug`: must start with a letter and contain at least one dot. The HTML comment is stripped before injection (zero context cost). The shipped hooks reference these IDs to log when each rule loaded and when it was violated.
+
+Optional metadata (read by the dialect translators, not by Claude itself):
+
+- `emphasis=high` — translators wrap the rule in **bold** for tools that respond to emphasis tokens (Claude, Cursor).
+- `paths=src/**/*.ts,test/**` — translators surface this as Cursor's `globs:` frontmatter or Claude's `paths:` frontmatter. Comma-separated globs.
+
+```markdown
+- <!-- id: code-style.no-any emphasis=high paths=src/**/*.ts --> Use `unknown` and type guards, not `any`.
+```
+
+### 11.2 The `.aikit/events.jsonl` telemetry log
+
+Three hooks append to this file (auto-gitignored):
+
+- `log-rule-event.sh` runs on `InstructionsLoaded`. Scans loaded files for rule IDs and writes one `{event:"loaded"}` per ID per session.
+- `check-pattern-violations.sh` runs on `PostToolUse(Edit|Write)`. Reads `.claude/aikit-rules.json` and writes `{event:"violation"}` per pattern hit.
+- `judge-rule-compliance.sh` runs on `Stop` and `SubagentStop`. **Opt-in**: requires both `AIKIT_JUDGE=1` and `ANTHROPIC_API_KEY`. Calls Claude Haiku and writes `{event:"cited"}` or `{event:"judged_violation"}` per loaded rule per turn (~$0.001/turn).
+
+Run `aikit doctor --rules` to see hot/disputed/dead/unmatched buckets, or `aikit report` for a Markdown summary.
+
+### 11.3 Adherence semantics
+
+`aikit report --format=json` returns one of two shapes.
+
+When the LLM judge has produced `cited` events:
+
+```json
+{ "adherence_score": 87, "adherence_basis": "judge", ... }
+```
+
+The score is `cited / (cited + violations + judged_violations)` percent.
+
+When no `cited` events exist (judge disabled or never fired):
+
+```json
+{ "adherence_score": null, "adherence_basis": "no-evidence", ... }
+```
+
+`loaded` events are **not** counted as positive evidence. A file being scanned isn't proof a rule was followed.
+
+### 11.4 Privacy
+
+All telemetry is local. `.aikit/events.jsonl` is auto-added to `.gitignore`. Nothing leaves your machine unless you explicitly opt into the LLM judge — and even then, the judge calls the Anthropic API only with your own key, only on `Stop` events, with the assistant transcript capped at 8000 chars.
+
+Errors from the judge land in a sibling `.aikit/judge-errors.log` so you can see why a turn produced no verdicts (HTTP status, parse failure, etc.).
 
 ---
 
