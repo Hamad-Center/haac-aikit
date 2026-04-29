@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "
 import { join } from "node:path";
 import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
 import { extractMarkerRegion } from "../render/markers.js";
-import type { CliArgs, WriteResult } from "../types.js";
+import type { CliArgs, WriteResult, ProjectShape } from "../types.js";
 
 export async function runSync(argv: CliArgs): Promise<void> {
   const dryRun = argv["dry-run"];
@@ -202,7 +202,7 @@ function syncAgents(shapes: string[], dryRun: boolean): WriteResult[] {
 
   const agentsToInstall = new Set(CORE_AGENTS);
   for (const shape of shapes) {
-    for (const agent of (SHAPE_AGENTS[shape] ?? [])) {
+    for (const agent of (SHAPE_AGENTS[shape as ProjectShape] ?? [])) {
       agentsToInstall.add(agent);
     }
   }
