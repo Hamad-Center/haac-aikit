@@ -1,16 +1,17 @@
 import * as p from "@clack/prompts";
-import { readConfig } from "../fs/readConfig.js";
+import { readConfig, writeConfig } from "../fs/readConfig.js";
 import { safeWrite } from "../fs/safeWrite.js";
 import { ensureGitignoreEntries } from "../fs/gitignore.js";
 import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
 import { resolveShapeAgents } from "../catalog/shape-agents.js";
 import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
 import { extractMarkerRegion } from "../render/markers.js";
-import type { CliArgs, WriteResult, WriteOpts, AikitConfig } from "../types.js";
+import { interactivePrompt, inferTier3Slot, type ConflictPrompt } from "../fs/conflict.js";
+import type { CliArgs, WriteResult, WriteOpts, AikitConfig, ConflictResolution } from "../types.js";
 
-export async function runSync(argv: CliArgs): Promise<void> {
+export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt }): Promise<void> {
   const dryRun = argv["dry-run"];
   const force = argv.force;
   const config = readConfig(argv.config);
@@ -108,10 +109,85 @@ export async function runSync(argv: CliArgs): Promise<void> {
 
   ensureGitignoreEntries(dryRun);
 
+  const conflicts = results.filter((r) => r.action === "conflict");
+
+  // Interactive conflict resolution: only when stdin is a TTY and neither
+  // --yes nor --force was passed. Headless / CI paths skip this block.
+  if (conflicts.length > 0 && !force) {
+    // An injected _conflictPrompt is the test-seam signal: treat it as interactive
+    // even without a real TTY so integration tests can exercise the loop.
+    const isInteractive = (Boolean(process.stdin.isTTY) || argv._conflictPrompt != null) && !argv.yes;
+    if (isInteractive) {
+      const prompt = argv._conflictPrompt ?? interactivePrompt;
+      let bulkAction: "replace_all" | "skip_all" | null = null;
+      let configMutated = false;
+      let workingConfig: AikitConfig = config;
+
+      p.log.info(`Found ${conflicts.length} file(s) modified locally. Reviewing each…`);
+
+      for (const conflict of conflicts) {
+        const incomingSrc = conflict.src;
+        if (!incomingSrc) continue;
+
+        // Bulk skip_all: mark skipped and move on — no tier3 update.
+        if (bulkAction === "skip_all") {
+          conflict.action = "skipped";
+          continue;
+        }
+
+        let resolution: ConflictResolution;
+        if (bulkAction === "replace_all") {
+          resolution = "replace";
+        } else {
+          const local = readFileSync(conflict.path, "utf8");
+          const incoming = readFileSync(incomingSrc, "utf8");
+          resolution = await prompt.ask(conflict.path, local, incoming);
+          if (resolution === "replace_all") bulkAction = "replace_all";
+          if (resolution === "skip_all") {
+            // Treat the current file as a plain skip, then continue loop
+            // with bulkAction = "skip_all" (no tier3 update for bulk skips).
+            bulkAction = "skip_all";
+            conflict.action = "skipped";
+            continue;
+          }
+        }
+
+        if (resolution === "replace" || resolution === "replace_all") {
+          if (!opts.dryRun) copyFileSync(incomingSrc, conflict.path);
+          conflict.action = "updated";
+        } else if (resolution === "keep") {
+          const slot = inferTier3Slot(conflict.path);
+          if (slot) {
+            const name = basename(conflict.path).replace(/\.md$/, "");
+            const current = workingConfig[slot] ?? { tier1: "all", tier2: "all", tier3: [] };
+            if (!current.tier3.includes(name)) {
+              workingConfig = {
+                ...workingConfig,
+                [slot]: { ...current, tier3: [...current.tier3, name] },
+              };
+              configMutated = true;
+            }
+          } else {
+            p.log.warn(
+              `Kept ${conflict.path} — no tier3 protection available; this file will be flagged again on next sync.`
+            );
+          }
+          conflict.action = "skipped";
+        }
+      }
+
+      if (configMutated && !opts.dryRun) {
+        writeConfig(workingConfig);
+      }
+    }
+    // Non-interactive (--yes, non-TTY): fall through to the existing
+    // "X conflict(s) skipped" warning below.
+  }
+
   const created = results.filter((r) => r.action === "created").length;
   const updated = results.filter((r) => r.action === "updated").length;
   const skipped = results.filter((r) => r.action === "skipped").length;
-  const conflicts = results.filter((r) => r.action === "conflict");
+  const remainingConflicts = results.filter((r) => r.action === "conflict");
 
   // Hide skipped (already up-to-date) entries from the per-file list to keep
   // the output focused on what actually changed. Show them only on dry-run
@@ -134,8 +210,8 @@ export async function runSync(argv: CliArgs): Promise<void> {
     p.log.info(`Already up to date — ${skipped} files match the catalog.`);
   }
 
-  if (conflicts.length > 0) {
-    p.log.warn(`${conflicts.length} conflict(s) skipped (use --force to overwrite)`);
+  if (remainingConflicts.length > 0) {
+    p.log.warn(`${remainingConflicts.length} conflict(s) skipped (use --force to overwrite)`);
   }
 
   p.outro("Sync complete.");
@@ -157,7 +233,7 @@ export function copyAction(
       return { path: destPath, action: "skipped" };
     }
     if (!opts.force) {
-      return { path: destPath, action: "conflict" };
+      return { path: destPath, action: "conflict", src: srcPath };
     }
   }
   if (!opts.dryRun) {

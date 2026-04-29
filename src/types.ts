@@ -70,6 +70,7 @@ export interface WizardAnswers {
 export interface WriteResult {
   path: string;
   action: "created" | "updated" | "skipped" | "conflict";
+  src?: string; // catalog source path for copy-style writes (used by conflict resolution)
 }
 
 export interface WriteOpts {
