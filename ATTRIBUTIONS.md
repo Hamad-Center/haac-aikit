@@ -29,6 +29,13 @@ The AGENTS.md template and cross-tool rule format follows the specification at h
 
 Skills follow the open specification at https://agentskills.io/specification.
 
+## diff (BSD-3-Clause)
+
+Inline diff generation in `src/fs/diff.ts` backed by the `diff` npm package.
+
+Source: https://github.com/kpdecker/jsdiff  
+License: BSD-3-Clause
+
 ---
 
 All other content in this package is original work licensed under MIT.

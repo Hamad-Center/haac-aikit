@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - Interactive conflict resolution: `aikit sync` and `aikit update` now prompt before overwriting locally-modified template files (agents, skills, commands, hooks). Five options: Replace (recommended default), Keep + tier3 (auto-protects future syncs for agents/skills), Show diff, Replace all, Skip all.
 - `src/fs/diff.ts` — inline colorized unified diff helper backed by the `diff` package.
-- `src/fs/conflict.ts` — `resolveConflict()` interactive prompt + `inferTier3Slot()` path-to-tier3-slot mapper.
+- `src/fs/conflict.ts` — `interactivePrompt` (default `ConflictPrompt`) + `inferTier3Slot()` path-to-tier3-slot mapper.
 - `docs/conflict-resolution.md` — full walkthrough of the prompt UX and headless behavior.
 
 ### Changed

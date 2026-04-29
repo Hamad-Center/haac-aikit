@@ -216,7 +216,7 @@ Most prompts have a `--flag` equivalent for headless use.
 
 ## Status
 
-This is 0.4.0. The strategy plan reserves 1.0 until at least three external teams have used the observability loop on real PRs — until then, expect breaking changes between minor versions. The Cursor dialect translator is the only one shipping in 0.4.0; Claude, Aider, Copilot, and Gemini translators are next.
+This is 0.7.0. The strategy plan reserves 1.0 until at least three external teams have used the observability loop on real PRs — until then, expect breaking changes between minor versions. 0.7.0 ships the tiered agent system, 8 new agents, interactive conflict resolution, and the Cursor dialect translator; Claude, Aider, Copilot, and Gemini translators are next.
 
 ## Contributing
 
