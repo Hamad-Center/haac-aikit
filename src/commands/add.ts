@@ -4,13 +4,13 @@ import * as p from "@clack/prompts";
 import kleur from "kleur";
 import { CATALOG_ROOT } from "../catalog/index.js";
 import { readConfig, writeConfig } from "../fs/readConfig.js";
-import type { AikitConfig, CliArgs, ProjectShape } from "../types.js";
+import type { AikitConfig, AgentTier, CliArgs, ProjectShape, SkillTier } from "../types.js";
 
 type ItemType = "skill" | "agent" | "hook";
 
 const ITEM_DIRS: Record<ItemType, { catalog: string; dest: string; ext: string[] }> = {
   skill: { catalog: "skills/tier1", dest: ".claude/skills", ext: [".md"] },
-  agent: { catalog: "agents", dest: ".claude/agents", ext: [".md"] },
+  agent: { catalog: "agents/tier1", dest: ".claude/agents", ext: [".md"] },
   hook: { catalog: "hooks", dest: ".claude/hooks", ext: [".sh"] },
 };
 
@@ -144,6 +144,15 @@ function updateConfigForAddition(configPath: string | undefined, item: FoundItem
       updated = { ...config, shape: [...config.shape, shape] };
       message = `Added "${shape}" to .aikitrc.json shape (so sync re-installs ${item.name})`;
     }
+    const agentTier = detectAgentTier(item.name);
+    if (agentTier === "tier3" && !(config.agents?.tier3 ?? []).includes(item.name)) {
+      const currentAgents = config.agents ?? { tier1: "all", tier2: "all", tier3: [] };
+      updated = {
+        ...(updated ?? config),
+        agents: { ...currentAgents, tier3: [...currentAgents.tier3, item.name] },
+      };
+      message = `Added "${item.name}" to .aikitrc.json agents.tier3`;
+    }
   } else if (item.type === "skill") {
     // Default scope already installs all tier1+tier2. If the skill isn't in
     // tier1/tier2 (e.g. user-authored copy), record it in skills.tier3.
@@ -172,9 +181,18 @@ function updateConfigForAddition(configPath: string | undefined, item: FoundItem
   return null;
 }
 
-function detectSkillTier(name: string): "tier1" | "tier2" | "tier3" {
+function detectSkillTier(name: string): SkillTier {
   for (const tier of ["tier1", "tier2"] as const) {
     if (existsSync(join(CATALOG_ROOT, "skills", tier, `${name}.md`))) {
+      return tier;
+    }
+  }
+  return "tier3";
+}
+
+function detectAgentTier(name: string): AgentTier {
+  for (const tier of ["tier1", "tier2"] as const) {
+    if (existsSync(join(CATALOG_ROOT, "agents", tier, `${name}.md`))) {
       return tier;
     }
   }

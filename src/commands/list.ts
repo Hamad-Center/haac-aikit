@@ -13,8 +13,9 @@ export async function runList(_argv: CliArgs): Promise<void> {
   const sections: { label: string; items: CatalogItem[] }[] = [
     { label: "Skills — Tier 1", items: listCategory("skills/tier1", ".claude/skills") },
     { label: "Skills — Tier 2", items: listCategory("skills/tier2", ".claude/skills") },
+    { label: "Agents — Tier 1", items: listCategory("agents/tier1", ".claude/agents") },
+    { label: "Agents — Tier 2", items: listCategory("agents/tier2", ".claude/agents") },
     { label: "Slash commands", items: listCategory("commands", ".claude/commands") },
-    { label: "Agents", items: listCategory("agents", ".claude/agents") },
     { label: "Hooks", items: listCategory("hooks", ".claude/hooks", [".sh"]) },
     { label: "Path-scoped rules", items: listClaudeRules() },
   ];

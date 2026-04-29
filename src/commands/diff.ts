@@ -38,7 +38,8 @@ export async function runDiff(argv: CliArgs): Promise<void> {
   // Check skill files
   checkCatalogDir("skills/tier1", ".claude/skills", missing, drifted);
   checkCatalogDir("skills/tier2", ".claude/skills", missing, drifted);
-  checkCatalogAgents(config.shape, missing, drifted);
+  checkCatalogDir("agents/tier1", ".claude/agents", missing, drifted);
+  checkCatalogDir("agents/tier2", ".claude/agents", missing, drifted);
   checkCatalogDir("hooks", ".claude/hooks", missing, drifted, [".sh"]);
 
   // Claude-only assets shipped at standard+ scope
@@ -80,54 +81,6 @@ export async function runDiff(argv: CliArgs): Promise<void> {
   }
 
   process.stdout.write(`\nRun ${kleur.cyan("aikit sync")} to update all, or ${kleur.cyan("aikit update")} to review changes first.\n`);
-}
-
-// Mirrors the SHAPE_AGENTS map in sync.ts. Kept local so a refactor doesn't
-// silently change diff semantics. Eight core agents always install; the
-// shape-specific ones only install if the user's config.shape requires them.
-const CORE_AGENTS = [
-  "orchestrator",
-  "planner",
-  "researcher",
-  "implementer",
-  "reviewer",
-  "tester",
-  "security-auditor",
-  "devops",
-];
-const SHAPE_AGENTS: Record<string, string[]> = {
-  web: ["frontend"],
-  fullstack: ["frontend", "backend"],
-  backend: ["backend"],
-  mobile: ["mobile"],
-  library: ["backend"],
-};
-
-function checkCatalogAgents(
-  shapes: string[],
-  missing: string[],
-  drifted: string[]
-): void {
-  const required = new Set<string>(CORE_AGENTS);
-  for (const shape of shapes) {
-    for (const agent of SHAPE_AGENTS[shape] ?? []) required.add(agent);
-  }
-
-  const catalogDir = join(CATALOG_ROOT, "agents");
-  if (!existsSync(catalogDir)) return;
-
-  for (const agent of required) {
-    const installed = join(".claude/agents", `${agent}.md`);
-    const catalogPath = join(catalogDir, `${agent}.md`);
-    if (!existsSync(catalogPath)) continue;
-    if (!existsSync(installed)) {
-      missing.push(installed);
-      continue;
-    }
-    if (readFileSync(catalogPath, "utf8") !== readFileSync(installed, "utf8")) {
-      drifted.push(installed);
-    }
-  }
 }
 
 function extractRegion(content: string, begin: string, end: string): string {
