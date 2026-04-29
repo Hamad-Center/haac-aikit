@@ -3,12 +3,12 @@ import { readConfig } from "../fs/readConfig.js";
 import { safeWrite } from "../fs/safeWrite.js";
 import { ensureGitignoreEntries } from "../fs/gitignore.js";
 import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
-import { SHAPE_AGENTS } from "../catalog/shape-agents.js";
+import { resolveShapeAgents } from "../catalog/shape-agents.js";
 import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
 import { extractMarkerRegion } from "../render/markers.js";
-import type { CliArgs, WriteResult, ProjectShape } from "../types.js";
+import type { CliArgs, WriteResult, AikitConfig } from "../types.js";
 
 export async function runSync(argv: CliArgs): Promise<void> {
   const dryRun = argv["dry-run"];
@@ -85,7 +85,7 @@ export async function runSync(argv: CliArgs): Promise<void> {
 
   // Agents
   if (config.integrations.subagents) {
-    results.push(...syncAgents(config.shape, dryRun));
+    results.push(...syncAgents(config, dryRun));
   }
 
   // Commands
@@ -191,31 +191,50 @@ function syncHooks(dryRun: boolean): WriteResult[] {
   return results;
 }
 
-function syncAgents(shapes: string[], dryRun: boolean): WriteResult[] {
-  const srcDir = join(CATALOG_ROOT, "agents");
-  const destDir = `.claude/agents`;
+function syncAgents(config: AikitConfig, dryRun: boolean): WriteResult[] {
+  const results: WriteResult[] = [];
+  results.push(...syncAgentTier("tier1", config.agents?.tier1 ?? "all", dryRun));
+  results.push(...syncAgentTier("tier2", resolveTier2Set(config), dryRun));
+  return results;
+}
+
+function resolveTier2Set(config: AikitConfig): "all" | string[] {
+  if (config.agents?.tier2 === "all") return "all";
+
+  const set = new Set<string>(
+    Array.isArray(config.agents?.tier2) ? config.agents.tier2 : []
+  );
+  for (const agent of resolveShapeAgents(config.shape)) {
+    set.add(agent);
+  }
+  return Array.from(set);
+}
+
+function syncAgentTier(
+  tier: "tier1" | "tier2",
+  selection: "all" | string[],
+  dryRun: boolean,
+): WriteResult[] {
+  const srcDir = join(CATALOG_ROOT, "agents", tier);
+  const destDir = ".claude/agents";
   const results: WriteResult[] = [];
 
   if (!existsSync(srcDir)) return results;
 
-  const CORE_AGENTS = ["orchestrator", "planner", "researcher", "implementer", "reviewer", "tester", "security-auditor", "devops"];
+  const allAgents = readdirSync(srcDir)
+    .filter((f) => f.endsWith(".md"))
+    .map((f) => f.replace(/\.md$/, ""));
 
-  const agentsToInstall = new Set(CORE_AGENTS);
-  for (const shape of shapes) {
-    for (const agent of (SHAPE_AGENTS[shape as ProjectShape] ?? [])) {
-      agentsToInstall.add(agent);
-    }
-  }
+  const agentsToInstall =
+    selection === "all" ? allAgents : allAgents.filter((a) => selection.includes(a));
 
   if (!dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const agent of agentsToInstall) {
     const src = join(srcDir, `${agent}.md`);
     const dest = join(destDir, `${agent}.md`);
-    if (!existsSync(src)) continue;
     results.push(copyAction(src, dest, dryRun));
   }
-
   return results;
 }
 

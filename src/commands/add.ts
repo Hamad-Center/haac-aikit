@@ -92,8 +92,25 @@ function findCatalogItem(name: string): FoundItem | null {
     }
   }
 
-  // Agents and hooks live in flat catalog directories.
-  for (const type of ["agent", "hook"] as const) {
+  // Agents live in tier subdirectories (tier1, tier2); hooks live flat.
+  for (const tier of ["tier1", "tier2"]) {
+    const dir = join(CATALOG_ROOT, "agents", tier);
+    if (existsSync(dir)) {
+      const candidate = join(dir, `${name}.md`);
+      if (existsSync(candidate)) {
+        return {
+          type: "agent",
+          name,
+          srcFile: candidate,
+          destFile: join(".claude/agents", `${name}.md`),
+          destDir: ".claude/agents",
+        };
+      }
+    }
+  }
+
+  // Hooks live in a flat catalog directory.
+  for (const type of ["hook"] as const) {
     const spec = ITEM_DIRS[type];
     const catalogDir = join(CATALOG_ROOT, spec.catalog);
     if (!existsSync(catalogDir)) continue;
@@ -166,7 +183,7 @@ function detectSkillTier(name: string): "tier1" | "tier2" | "tier3" {
 
 function listAllCatalogItems(): string[] {
   const items: string[] = [];
-  for (const subdir of ["skills/tier1", "skills/tier2", "agents", "hooks"]) {
+  for (const subdir of ["skills/tier1", "skills/tier2", "agents/tier1", "agents/tier2", "hooks"]) {
     const dir = join(CATALOG_ROOT, subdir);
     if (existsSync(dir)) {
       readdirSync(dir)
