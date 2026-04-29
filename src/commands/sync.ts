@@ -3,6 +3,7 @@ import { readConfig } from "../fs/readConfig.js";
 import { safeWrite } from "../fs/safeWrite.js";
 import { ensureGitignoreEntries } from "../fs/gitignore.js";
 import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
+import { SHAPE_AGENTS } from "../catalog/shape-agents.js";
 import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
@@ -198,13 +199,6 @@ function syncAgents(shapes: string[], dryRun: boolean): WriteResult[] {
   if (!existsSync(srcDir)) return results;
 
   const CORE_AGENTS = ["orchestrator", "planner", "researcher", "implementer", "reviewer", "tester", "security-auditor", "devops"];
-  const SHAPE_AGENTS: Record<string, string[]> = {
-    web: ["frontend"],
-    fullstack: ["frontend", "backend"],
-    backend: ["backend"],
-    mobile: ["mobile"],
-    library: ["backend"],
-  };
 
   const agentsToInstall = new Set(CORE_AGENTS);
   for (const shape of shapes) {
