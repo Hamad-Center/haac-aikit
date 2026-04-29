@@ -82,8 +82,13 @@ function buildDefaultConfig(
   shape: ProjectShape[],
   specialtyAgents: string[]
 ): AikitConfig {
+  // Collapse "user picked every option" to "all" so sync installs future tier2 agents too.
+  const allSpecialtyValues = new Set<string>(SPECIALTY_TIER2_AGENTS.map((a) => a.value));
   const agentTier2: "all" | string[] =
-    specialtyAgents.length === SPECIALTY_TIER2_AGENTS.length ? "all" : specialtyAgents;
+    specialtyAgents.length === allSpecialtyValues.size &&
+    specialtyAgents.every((a) => allSpecialtyValues.has(a))
+      ? "all"
+      : specialtyAgents;
   return {
     version: 1,
     projectName,

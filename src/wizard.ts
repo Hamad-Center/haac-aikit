@@ -115,13 +115,15 @@ export async function runWizard(projectName: string): Promise<WizardAnswers> {
         });
       },
 
-      specialtyAgents: () =>
-        p.multiselect<string>({
+      specialtyAgents: ({ results }) => {
+        if (results.scope === "minimal") return Promise.resolve(undefined);
+        return p.multiselect<string>({
           message: "Include specialty agents? (debugger and pr-describer always installed)",
           options: SPECIALTY_TIER2_AGENTS.map((a) => ({ value: a.value, label: a.label })),
           required: false,
-          initialValues: [],
-        }),
+          initialValues: defaultSpecialtyAgents(results.scope ?? "standard"),
+        });
+      },
     },
     {
       onCancel: () => {
