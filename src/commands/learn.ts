@@ -57,13 +57,21 @@ export async function runLearn(argv: CliArgs): Promise<void> {
     process.exit(1);
   }
 
+  if (!(await hasGitHubRemote())) {
+    process.stderr.write(
+      kleur.red("This repo has no GitHub remote. ") +
+        "`aikit learn` mines PR review history via `gh`, which requires a GitHub-hosted repo.\n" +
+        "Add a remote with `git remote add origin <url>` then re-run.\n"
+    );
+    process.exit(1);
+  }
+
   process.stdout.write(kleur.dim(`Fetching last ${limit} merged PRs...\n`));
   let prs: PR[];
   try {
     prs = await fetchMergedPRs(limit);
   } catch (err) {
-    const msg = err instanceof Error ? err.message.split("\n")[0] : String(err);
-    process.stderr.write(kleur.red(`Failed to list PRs via gh: ${msg}\n`));
+    process.stderr.write(kleur.red(`Failed to list PRs via gh: ${ghErrorMessage(err)}\n`));
     process.exit(1);
   }
   if (prs.length === 0) {
@@ -108,6 +116,26 @@ async function ensureGh(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function hasGitHubRemote(): Promise<boolean> {
+  try {
+    const { stdout } = await runCmd("git", ["remote", "-v"], { encoding: "utf8" });
+    return stdout.includes("github.com");
+  } catch {
+    return false;
+  }
+}
+
+// execFile errors include `stderr` separate from `message`. The default
+// `message` is just "Command failed: <cmd>" which is unhelpful — gh's actual
+// diagnostic ("no git remotes found", "HTTP 401", etc.) lives in stderr.
+function ghErrorMessage(err: unknown): string {
+  const e = err as { stderr?: unknown; message?: string };
+  const stderr = typeof e?.stderr === "string" ? e.stderr.trim() : "";
+  if (stderr) return stderr.split("\n")[0] ?? stderr;
+  if (typeof e?.message === "string") return e.message.split("\n")[0] ?? e.message;
+  return String(err);
 }
 
 async function fetchMergedPRs(limit: number): Promise<PR[]> {

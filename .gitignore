@@ -8,3 +8,4 @@ dist/
 CLAUDE.local.md
 .claude/settings.local.json
 .claude/.credentials.json
+RELEASE_TEST_NOTES.md

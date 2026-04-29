@@ -1,17 +1,35 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import * as p from "@clack/prompts";
 import kleur from "kleur";
-import type { CliArgs } from "../types.js";
+import { CATALOG_ROOT } from "../catalog/index.js";
+import { readConfig, writeConfig } from "../fs/readConfig.js";
+import type { AikitConfig, CliArgs, ProjectShape } from "../types.js";
 
-const CATALOG_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "catalog");
+type ItemType = "skill" | "agent" | "hook";
 
-const ITEM_DIRS: Record<string, { catalog: string; dest: string; ext: string[] }> = {
+const ITEM_DIRS: Record<ItemType, { catalog: string; dest: string; ext: string[] }> = {
   skill: { catalog: "skills/tier1", dest: ".claude/skills", ext: [".md"] },
   agent: { catalog: "agents", dest: ".claude/agents", ext: [".md"] },
   hook: { catalog: "hooks", dest: ".claude/hooks", ext: [".sh"] },
 };
+
+// Maps an agent name to the shapes that require it. When `aikit add backend`
+// runs, we look up which shape to add to config.shape so a future sync
+// re-installs the agent.
+const AGENT_TO_SHAPE: Record<string, ProjectShape> = {
+  frontend: "web",
+  backend: "backend",
+  mobile: "mobile",
+};
+
+interface FoundItem {
+  type: ItemType;
+  name: string;
+  srcFile: string;
+  destFile: string;
+  destDir: string;
+}
 
 export async function runAdd(argv: CliArgs): Promise<void> {
   const itemArg = argv._[1];
@@ -21,47 +39,129 @@ export async function runAdd(argv: CliArgs): Promise<void> {
     process.exit(1);
   }
 
-  // Search all categories for the item name
-  for (const [_type, spec] of Object.entries(ITEM_DIRS)) {
-    for (const tier of ["tier1", "tier2", ""]) {
-      const catalogDir = join(CATALOG_ROOT, tier ? `skills/${tier}` : spec.catalog);
-      if (!existsSync(catalogDir)) continue;
+  const found = findCatalogItem(itemArg);
+  if (!found) {
+    p.log.error(`"${itemArg}" not found in catalog.`);
+    const similar = listAllCatalogItems().filter(
+      (n) => n.includes(itemArg) || itemArg.includes((n.split("-")[0] ?? ""))
+    );
+    if (similar.length > 0) {
+      process.stdout.write(`Did you mean: ${similar.slice(0, 5).join(", ")}?\n`);
+    }
+    process.stdout.write(`Run ${kleur.cyan("aikit list")} to see all available items.\n`);
+    process.exit(1);
+  }
 
-      for (const ext of spec.ext) {
-        const srcFile = join(catalogDir, `${itemArg}${ext}`);
-        if (existsSync(srcFile)) {
-          const dest = spec.dest;
-          const destFile = join(dest, `${itemArg}${ext}`);
+  if (existsSync(found.destFile) && !argv.force) {
+    p.log.warn(`${found.destFile} already exists. Use --force to overwrite.`);
+    return;
+  }
 
-          if (existsSync(destFile) && !argv.force) {
-            p.log.warn(`${destFile} already exists. Use --force to overwrite.`);
-            return;
-          }
+  if (!argv["dry-run"]) {
+    mkdirSync(found.destDir, { recursive: true });
+    copyFileSync(found.srcFile, found.destFile);
+  }
 
-          if (!argv["dry-run"]) {
-            mkdirSync(dest, { recursive: true });
-            copyFileSync(srcFile, destFile);
-          }
+  const dryPrefix = argv["dry-run"] ? "[dry-run] " : "";
+  process.stdout.write(`${dryPrefix}${kleur.green("✓")} Added ${found.destFile}\n`);
 
-          process.stdout.write(
-            `${argv["dry-run"] ? "[dry-run] " : ""}${kleur.green("✓")} Added ${destFile}\n`
-          );
-          return;
-        }
+  // Persist the addition so the next `aikit sync` reproduces it.
+  if (!argv["dry-run"]) {
+    const configChange = updateConfigForAddition(argv.config, found);
+    if (configChange) {
+      process.stdout.write(`  ${kleur.dim(configChange)}\n`);
+    }
+  }
+}
+
+function findCatalogItem(name: string): FoundItem | null {
+  // Skills are spread across tier1 and tier2.
+  for (const tier of ["tier1", "tier2"]) {
+    const dir = join(CATALOG_ROOT, "skills", tier);
+    if (existsSync(dir)) {
+      const candidate = join(dir, `${name}.md`);
+      if (existsSync(candidate)) {
+        return {
+          type: "skill",
+          name,
+          srcFile: candidate,
+          destFile: join(".claude/skills", `${name}.md`),
+          destDir: ".claude/skills",
+        };
       }
     }
   }
 
-  // Not found — suggest similar names
-  const allItems = listAllCatalogItems();
-  const similar = allItems.filter((n) => n.includes(itemArg) || itemArg.includes(n.split("-")[0] ?? ""));
-
-  p.log.error(`"${itemArg}" not found in catalog.`);
-  if (similar.length > 0) {
-    process.stdout.write(`Did you mean: ${similar.slice(0, 5).join(", ")}?\n`);
+  // Agents and hooks live in flat catalog directories.
+  for (const type of ["agent", "hook"] as const) {
+    const spec = ITEM_DIRS[type];
+    const catalogDir = join(CATALOG_ROOT, spec.catalog);
+    if (!existsSync(catalogDir)) continue;
+    for (const ext of spec.ext) {
+      const candidate = join(catalogDir, `${name}${ext}`);
+      if (existsSync(candidate)) {
+        return {
+          type,
+          name,
+          srcFile: candidate,
+          destFile: join(spec.dest, `${name}${ext}`),
+          destDir: spec.dest,
+        };
+      }
+    }
   }
-  process.stdout.write(`Run ${kleur.cyan("aikit list")} to see all available items.\n`);
-  process.exit(1);
+
+  return null;
+}
+
+function updateConfigForAddition(configPath: string | undefined, item: FoundItem): string | null {
+  const config = readConfig(configPath);
+  if (!config) return null;
+
+  let updated: AikitConfig | null = null;
+  let message = "";
+
+  if (item.type === "agent") {
+    const shape = AGENT_TO_SHAPE[item.name];
+    if (shape && !config.shape.includes(shape)) {
+      updated = { ...config, shape: [...config.shape, shape] };
+      message = `Added "${shape}" to .aikitrc.json shape (so sync re-installs ${item.name})`;
+    }
+  } else if (item.type === "skill") {
+    // Default scope already installs all tier1+tier2. If the skill isn't in
+    // tier1/tier2 (e.g. user-authored copy), record it in skills.tier3.
+    const skillTier = detectSkillTier(item.name);
+    if (skillTier === "tier3" && !config.skills.tier3.includes(item.name)) {
+      updated = {
+        ...config,
+        skills: { ...config.skills, tier3: [...config.skills.tier3, item.name] },
+      };
+      message = `Added "${item.name}" to .aikitrc.json skills.tier3`;
+    }
+  } else if (item.type === "hook") {
+    if (!config.integrations.hooks) {
+      updated = {
+        ...config,
+        integrations: { ...config.integrations, hooks: true },
+      };
+      message = "Set integrations.hooks=true in .aikitrc.json";
+    }
+  }
+
+  if (updated) {
+    writeConfig(updated, configPath);
+    return message;
+  }
+  return null;
+}
+
+function detectSkillTier(name: string): "tier1" | "tier2" | "tier3" {
+  for (const tier of ["tier1", "tier2"] as const) {
+    if (existsSync(join(CATALOG_ROOT, "skills", tier, `${name}.md`))) {
+      return tier;
+    }
+  }
+  return "tier3";
 }
 
 function listAllCatalogItems(): string[] {

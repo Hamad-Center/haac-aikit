@@ -6,6 +6,7 @@ import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
 import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
+import { extractMarkerRegion } from "../render/markers.js";
 import type { CliArgs, WriteResult } from "../types.js";
 
 export async function runSync(argv: CliArgs): Promise<void> {
@@ -29,7 +30,11 @@ export async function runSync(argv: CliArgs): Promise<void> {
     projectName: config.projectName,
     description: config.projectDescription ?? "",
   });
-  results.push(safeWrite("AGENTS.md", agentsMdContent, { ...opts, useMarkers: true, managedContent: agentsMdContent }));
+  // The rendered template already contains BEGIN/END markers around its
+  // managed region. Pass only that inner region to safeWrite so re-syncs don't
+  // nest markers (regression: pre-0.5 produced 2 BEGINs / 5 ENDs after 3 syncs).
+  const agentsMdManaged = extractMarkerRegion(agentsMdContent, "AGENTS.md") ?? agentsMdContent;
+  results.push(safeWrite("AGENTS.md", agentsMdContent, { ...opts, useMarkers: true, managedContent: agentsMdManaged }));
 
   if (config.tools.includes("claude")) {
     results.push(safeWrite("CLAUDE.md", catalog.claudeMd(), { ...opts, useMarkers: false }));
@@ -104,23 +109,51 @@ export async function runSync(argv: CliArgs): Promise<void> {
 
   const created = results.filter((r) => r.action === "created").length;
   const updated = results.filter((r) => r.action === "updated").length;
+  const skipped = results.filter((r) => r.action === "skipped").length;
   const conflicts = results.filter((r) => r.action === "conflict");
 
+  // Hide skipped (already up-to-date) entries from the per-file list to keep
+  // the output focused on what actually changed. Show them only on dry-run
+  // and only if there's genuine drift to display.
+  const visible = dryRun
+    ? results
+    : results.filter((r) => r.action !== "skipped");
+
   if (dryRun) {
-    p.note(results.map((r) => `${r.action.padEnd(9)} ${r.path}`).join("\n"), "Dry run");
+    p.note(visible.map((r) => `${r.action.padEnd(9)} ${r.path}`).join("\n"), "Dry run");
     return;
   }
 
-  p.note(
-    results.map((r) => `${r.action.padEnd(9)} ${r.path}`).join("\n"),
-    `${created} created, ${updated} updated`
-  );
+  if (visible.length > 0) {
+    p.note(
+      visible.map((r) => `${r.action.padEnd(9)} ${r.path}`).join("\n"),
+      `${created} created, ${updated} updated, ${skipped} unchanged`
+    );
+  } else {
+    p.log.info(`Already up to date — ${skipped} files match the catalog.`);
+  }
 
   if (conflicts.length > 0) {
     p.log.warn(`${conflicts.length} conflict(s) skipped (use --force to overwrite)`);
   }
 
   p.outro("Sync complete.");
+}
+
+// Resolve the right action for a copy-style sync. Captures pre-write state
+// and compares content so we report `created` / `updated` / `skipped`
+// honestly instead of always saying `updated`.
+function copyAction(srcPath: string, destPath: string, dryRun: boolean): WriteResult {
+  const existed = existsSync(destPath);
+  const incoming = readFileSync(srcPath, "utf8");
+  if (existed) {
+    const current = readFileSync(destPath, "utf8");
+    if (current === incoming) {
+      return { path: destPath, action: "skipped" };
+    }
+  }
+  if (!dryRun) copyFileSync(srcPath, destPath);
+  return { path: destPath, action: existed ? "updated" : "created" };
 }
 
 function syncSkills(tier: "tier1" | "tier2", dryRun: boolean): WriteResult[] {
@@ -134,9 +167,7 @@ function syncSkills(tier: "tier1" | "tier2", dryRun: boolean): WriteResult[] {
   if (!dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    const dest = join(destDir, file);
-    if (!dryRun) copyFileSync(join(srcDir, file), dest);
-    results.push({ path: dest, action: existsSync(dest) ? "updated" : "created" });
+    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
   }
 
   return results;
@@ -153,9 +184,7 @@ function syncHooks(dryRun: boolean): WriteResult[] {
   if (!dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    const dest = join(destDir, file);
-    if (!dryRun) copyFileSync(join(srcDir, file), dest);
-    results.push({ path: dest, action: existsSync(dest) ? "updated" : "created" });
+    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
   }
 
   return results;
@@ -190,8 +219,7 @@ function syncAgents(shapes: string[], dryRun: boolean): WriteResult[] {
     const src = join(srcDir, `${agent}.md`);
     const dest = join(destDir, `${agent}.md`);
     if (!existsSync(src)) continue;
-    if (!dryRun) copyFileSync(src, dest);
-    results.push({ path: dest, action: existsSync(dest) ? "updated" : "created" });
+    results.push(copyAction(src, dest, dryRun));
   }
 
   return results;
@@ -208,9 +236,7 @@ function syncCommands(dryRun: boolean): WriteResult[] {
   if (!dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    const dest = join(destDir, file);
-    if (!dryRun) copyFileSync(join(srcDir, file), dest);
-    results.push({ path: dest, action: existsSync(dest) ? "updated" : "created" });
+    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
   }
 
   return results;
@@ -227,9 +253,7 @@ function syncCI(dryRun: boolean): WriteResult[] {
   if (!dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    const dest = join(destDir, file);
-    if (!dryRun) copyFileSync(join(srcDir, file), dest);
-    results.push({ path: dest, action: existsSync(dest) ? "updated" : "created" });
+    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
   }
 
   return results;
@@ -252,9 +276,7 @@ function syncDir(
   if (!dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    const dest = join(destDir, file);
-    if (!dryRun) copyFileSync(join(srcDir, file), dest);
-    results.push({ path: dest, action: existsSync(dest) ? "updated" : "created" });
+    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
   }
 
   return results;

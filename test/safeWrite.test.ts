@@ -24,6 +24,44 @@ describe("safeWrite", () => {
     expect(readFileSync("test.md", "utf8")).toBe("hello");
   });
 
+  it("reports skipped when content is byte-identical (regression: pre-fix false 'conflict')", () => {
+    writeFileSync("test.md", "hello");
+    const result = safeWrite("test.md", "hello", { useMarkers: false });
+    expect(result.action).toBe("skipped");
+  });
+
+  it("reports skipped for marker-managed files when content is unchanged", () => {
+    const filePath = "test.md";
+    // The file on disk has full content with markers around an inner region.
+    // managedContent is the INNER region only — this matches sync.ts's
+    // extractMarkerRegion-based passing convention (regression: pre-0.5
+    // sync.ts passed the whole file, which double-wrapped on every re-run).
+    const initial = "intro\n<!-- BEGIN:haac-aikit -->\nmanaged\n<!-- END:haac-aikit -->\nouter";
+    writeFileSync(filePath, initial);
+    const result = safeWrite(filePath, initial, {
+      useMarkers: true,
+      managedContent: "managed",
+    });
+    expect(result.action).toBe("skipped");
+  });
+
+  it("does not nest BEGIN/END markers on repeated syncs (regression: pre-0.5 nesting bug)", () => {
+    const filePath = "test.md";
+    const initial = "# Project\n\n<!-- BEGIN:haac-aikit -->\noriginal\n<!-- END:haac-aikit -->\n";
+    writeFileSync(filePath, initial);
+
+    // First sync — inner content changes.
+    safeWrite(filePath, initial, { useMarkers: true, managedContent: "updated" });
+    // Second sync with the same managedContent should NOT add more markers.
+    safeWrite(filePath, initial, { useMarkers: true, managedContent: "updated" });
+
+    const final = readFileSync(filePath, "utf8");
+    const beginCount = (final.match(/BEGIN:haac-aikit/g) ?? []).length;
+    const endCount = (final.match(/END:haac-aikit/g) ?? []).length;
+    expect(beginCount).toBe(1);
+    expect(endCount).toBe(1);
+  });
+
   it("reports conflict when file exists and useMarkers is false", () => {
     writeFileSync("test.md", "existing");
     const result = safeWrite("test.md", "new content", { useMarkers: false });

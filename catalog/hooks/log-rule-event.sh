@@ -47,8 +47,9 @@ seen = set()
 files = [c for c in candidates if not (c in seen or seen.add(c))]
 
 # Match a dotted-slug rule ID, starting with a letter so docstring examples
-# like <!-- id: ... --> don't produce phantom events.
-id_rx = re.compile(r"<!--\s*id:\s*([a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+)\s*-->")
+# like <!-- id: ... --> don't produce phantom events. Allows optional
+# space-separated key=value metadata between the ID and the closing -->.
+id_rx = re.compile(r"<!--\s*id:\s*([a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+)(?:\s+[a-zA-Z][a-zA-Z0-9_-]*=[^>\s]+)*\s*-->")
 ts = os.environ["HOOK_TS"]
 log_path = os.environ["HOOK_LOG"]
 

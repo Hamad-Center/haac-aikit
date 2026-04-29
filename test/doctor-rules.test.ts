@@ -145,6 +145,43 @@ describe("aikit doctor --rules", () => {
     expect(stdout).toContain("3 malformed line(s)");
   });
 
+  it("emits valid JSON when --format=json", async () => {
+    writeAgentsMd(["code-style.no-any"]);
+    writeEvents([
+      { ts: "2026-04-29T00:00:00Z", event: "loaded", rule_id: "code-style.no-any" },
+      { ts: "2026-04-29T00:01:00Z", event: "violation", rule_id: "code-style.no-any", file: "src/x.ts" },
+    ]);
+
+    await runDoctor({ _: ["doctor"], rules: true, format: "json" } as never);
+
+    const parsed = JSON.parse(stdout);
+    expect(parsed).toHaveProperty("generated_at");
+    expect(parsed).toHaveProperty("rules");
+    expect(Array.isArray(parsed.rules)).toBe(true);
+    expect(parsed.rules.length).toBeGreaterThanOrEqual(1);
+    expect(parsed.rules[0]).toHaveProperty("bucket");
+    expect(parsed.rules[0]).toHaveProperty("advice");
+  });
+
+  it("includes compile_errors in JSON output", async () => {
+    writeAgentsMd([]);
+    writeEvents([
+      {
+        ts: "2026-04-29T00:00:00Z",
+        event: "rule_compile_error",
+        rule_id: "code-style.bad",
+        pattern: "(unclosed",
+        error: "missing paren",
+      },
+    ]);
+
+    await runDoctor({ _: ["doctor"], rules: true, format: "json" } as never);
+
+    const parsed = JSON.parse(stdout);
+    expect(parsed.compile_errors).toHaveLength(1);
+    expect(parsed.compile_errors[0].rule_id).toBe("code-style.bad");
+  });
+
   it("surfaces rule_compile_error events from broken regex patterns", async () => {
     writeAgentsMd(["code-style.bad-regex"]);
     writeEvents([

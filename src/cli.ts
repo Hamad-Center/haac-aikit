@@ -3,7 +3,7 @@ import mri from "mri";
 import { isInteractive } from "./detect/isCI.js";
 import type { CliArgs } from "./types.js";
 
-const VERSION = "0.4.0";
+const VERSION = "0.5.0";
 
 const HELP = `
 haac-aikit — the batteries-included AI-agentic-coding kit
@@ -33,6 +33,10 @@ FLAGS
   --config=<path>     Use a specific .aikitrc.json location
   --tools=<list>      Comma-separated tool list (claude,cursor,copilot,...)
   --preset=<scope>    minimal | standard | everything
+  --rules             (with doctor)  Show rule-observability buckets
+  --format=<fmt>      (with report / doctor --rules)  markdown | json
+  --since=<date>      (with report)  Restrict events to after this ISO date
+  --limit=<n>         (with learn)   How many merged PRs to scan (default 30)
   --help, -h          Show this help
   --version, -v       Show version
 `;

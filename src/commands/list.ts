@@ -1,14 +1,11 @@
 import { existsSync, readdirSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import kleur from "kleur";
+import { CATALOG_ROOT } from "../catalog/index.js";
 import type { CliArgs } from "../types.js";
-
-const CATALOG_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "catalog");
 
 interface CatalogItem {
   name: string;
-  tier?: string;
   installed: boolean;
 }
 
@@ -19,6 +16,7 @@ export async function runList(_argv: CliArgs): Promise<void> {
     { label: "Slash commands", items: listCategory("commands", ".claude/commands") },
     { label: "Agents", items: listCategory("agents", ".claude/agents") },
     { label: "Hooks", items: listCategory("hooks", ".claude/hooks", [".sh"]) },
+    { label: "Path-scoped rules", items: listClaudeRules() },
   ];
 
   let total = 0;
@@ -60,5 +58,31 @@ function listCategory(
 
   return readdirSync(catalogDir)
     .filter((f) => extensions.some((ext) => f.endsWith(ext)))
-    .map((f) => ({ name: f.replace(/\.md$/, ""), installed: installedFiles.has(f) }));
+    .map((f) => ({
+      name: stripExtension(f, extensions),
+      installed: installedFiles.has(f),
+    }));
+}
+
+function listClaudeRules(): CatalogItem[] {
+  const catalogDir = join(CATALOG_ROOT, "rules", "claude-rules");
+  if (!existsSync(catalogDir)) return [];
+
+  const installedDir = ".claude/rules";
+  const installedFiles = new Set(
+    existsSync(installedDir)
+      ? readdirSync(installedDir).filter((f) => f.endsWith(".md"))
+      : []
+  );
+
+  return readdirSync(catalogDir)
+    .filter((f) => f.endsWith(".md"))
+    .map((f) => ({ name: stripExtension(f, [".md"]), installed: installedFiles.has(f) }));
+}
+
+function stripExtension(filename: string, extensions: string[]): string {
+  for (const ext of extensions) {
+    if (filename.endsWith(ext)) return filename.slice(0, -ext.length);
+  }
+  return filename;
 }

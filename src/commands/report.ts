@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { extractRuleIds } from "../render/rule-ids.js";
 import type { CliArgs } from "../types.js";
 
 interface RuleEvent {
@@ -76,13 +77,9 @@ function collectKnownRuleIds(): Set<string> {
       if (f.endsWith(".md")) candidates.push(join(".claude/rules", f));
     }
   }
-  const idRx = /<!--\s*id:\s*([a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+)\s*-->/g;
   for (const path of candidates) {
     if (!existsSync(path)) continue;
-    const content = readFileSync(path, "utf8");
-    for (const m of content.matchAll(idRx)) {
-      if (m[1]) ids.add(m[1]);
-    }
+    for (const id of extractRuleIds(readFileSync(path, "utf8"))) ids.add(id);
   }
   return ids;
 }
@@ -193,7 +190,15 @@ function toMarkdownReport(
   const rows = [...stats.entries()].sort(([, a], [, b]) => b.loaded + b.violations - (a.loaded + a.violations));
 
   const hot = rows.filter(([, s]) => s.loaded > 0 && (s.violations + s.judged) === 0);
-  const disputed = rows.filter(([, s]) => s.violations + s.judged > 0);
+  // Disputed = declared (loaded or cited) AND has negatives. Unmatched =
+  // pattern violations recorded but rule never loaded — usually means the
+  // rule isn't in any rule file, just in aikit-rules.json.
+  const disputed = rows.filter(
+    ([, s]) => (s.loaded > 0 || s.cited > 0) && (s.violations + s.judged) > 0
+  );
+  const unmatched = rows.filter(
+    ([, s]) => s.loaded === 0 && s.cited === 0 && (s.violations + s.judged) > 0
+  );
   const dead = rows.filter(([, s]) => s.loaded === 0 && s.cited === 0 && s.violations === 0 && s.judged === 0);
 
   const out: string[] = [];
@@ -209,11 +214,26 @@ function toMarkdownReport(
 
   if (disputed.length > 0) {
     out.push("### ⚠️ Rules under pressure");
+    out.push("_Declared rules with violations — strengthen wording or move to a hook._");
     out.push("");
-    out.push("| Rule | Loads | Pattern violations | Judged violations |");
-    out.push("|---|---:|---:|---:|");
+    out.push("| Rule | Loads | Cited | Pattern violations | Judged violations |");
+    out.push("|---|---:|---:|---:|---:|");
     for (const [id, s] of disputed) {
-      out.push(`| \`${id}\` | ${s.loaded} | ${s.violations} | ${s.judged} |`);
+      out.push(`| \`${id}\` | ${s.loaded} | ${s.cited} | ${s.violations} | ${s.judged} |`);
+    }
+    out.push("");
+  }
+
+  if (unmatched.length > 0) {
+    out.push("### 🟡 Pattern hits without a declared rule");
+    out.push(
+      "_Pattern matched in `aikit-rules.json` but no rule with this ID is in your AGENTS.md / `.claude/rules/`. Either declare the rule or remove the pattern config._"
+    );
+    out.push("");
+    out.push("| Rule ID | Pattern hits |");
+    out.push("|---|---:|");
+    for (const [id, s] of unmatched) {
+      out.push(`| \`${id}\` | ${s.violations + s.judged} |`);
     }
     out.push("");
   }

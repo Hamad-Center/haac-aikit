@@ -31,10 +31,18 @@ export function safeWrite(
     if (useMarkers && managedContent !== undefined) {
       const existing = readFileSync(filePath, "utf8");
       const { replaced } = upsertMarkerRegion(existing, managedContent, filePath);
+      if (existing === replaced) {
+        return { path: filePath, action: "skipped" };
+      }
       if (!dryRun) writeFileSync(filePath, replaced, "utf8");
       return { path: filePath, action: "updated" };
     }
 
+    // Non-marker path: don't blindly report conflict. Compare content first.
+    const existing = readFileSync(filePath, "utf8");
+    if (existing === content) {
+      return { path: filePath, action: "skipped" };
+    }
     if (!force) {
       return { path: filePath, action: "conflict" };
     }

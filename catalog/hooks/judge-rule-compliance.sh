@@ -76,7 +76,7 @@ if len(transcript) > 8000:
     transcript = transcript[:8000] + "\n...[truncated]"
 
 # Collect declared rule IDs from project rule files.
-id_rx = re.compile(r"<!--\s*id:\s*([a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+)\s*-->")
+id_rx = re.compile(r"<!--\s*id:\s*([a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+)(?:\s+[a-zA-Z][a-zA-Z0-9_-]*=[^>\s]+)*\s*-->")
 rules = {}  # id -> surrounding line for context
 candidates = ["AGENTS.md", "CLAUDE.md", ".claude/CLAUDE.md"]
 rules_dir = ".claude/rules"

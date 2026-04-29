@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import kleur from "kleur";
 import { readConfig } from "../fs/readConfig.js";
+import { extractRuleIds } from "../render/rule-ids.js";
 import type { CliArgs } from "../types.js";
 
 interface Finding {
@@ -35,7 +36,7 @@ interface RuleStats {
 export async function runDoctor(argv: CliArgs): Promise<void> {
   // --rules subcommand: rule-effectiveness telemetry summary
   if (argv.rules) {
-    runRulesReport();
+    runRulesReport(argv.format === "json" ? "json" : "text");
     return;
   }
 
@@ -128,6 +129,33 @@ export async function runDoctor(argv: CliArgs): Promise<void> {
     }
   }
 
+  // 6b. 0.4.0 artefacts (Claude + scope ≥ standard)
+  if (config.tools.includes("claude") && config.scope !== "minimal") {
+    for (const path of [
+      ".claude/aikit-rules.json",
+      "docs/claude-md-reference.md",
+      ".claude/rules/example.md",
+    ]) {
+      if (existsSync(path)) {
+        findings.push({ level: "ok", check: path, message: "present" });
+      } else {
+        findings.push({ level: "warn", check: path, message: "Missing — run `aikit sync`" });
+      }
+    }
+
+    // Telemetry hooks (only when integrations.hooks is on).
+    if (config.integrations.hooks) {
+      for (const hook of ["log-rule-event.sh", "check-pattern-violations.sh", "judge-rule-compliance.sh"]) {
+        const path = `.claude/hooks/${hook}`;
+        if (existsSync(path)) {
+          findings.push({ level: "ok", check: `telemetry:${hook}`, message: "installed" });
+        } else {
+          findings.push({ level: "warn", check: `telemetry:${hook}`, message: "Missing — run `aikit sync`" });
+        }
+      }
+    }
+  }
+
   // 7. Hooks registration
   if (config.integrations.hooks) {
     if (existsSync(".claude/hooks/hooks.json")) {
@@ -174,20 +202,30 @@ function printFindings(findings: Finding[]): void {
   }
 }
 
-function runRulesReport(): void {
+function runRulesReport(format: "text" | "json"): void {
   const eventsPath = ".aikit/events.jsonl";
   if (!existsSync(eventsPath)) {
-    process.stdout.write(
-      kleur.yellow("No telemetry yet. ") +
-        "Hooks log to .aikit/events.jsonl on first session.\n" +
-        "Run a Claude Code session in this repo, then re-run `aikit doctor --rules`.\n"
-    );
+    if (format === "json") {
+      process.stdout.write(
+        JSON.stringify({ status: "no_telemetry", message: ".aikit/events.jsonl not found" }, null, 2) + "\n"
+      );
+    } else {
+      process.stdout.write(
+        kleur.yellow("No telemetry yet. ") +
+          "Hooks log to .aikit/events.jsonl on first session.\n" +
+          "Run a Claude Code session in this repo, then re-run `aikit doctor --rules`.\n"
+      );
+    }
     return;
   }
 
   const { events, malformed } = parseEvents(readFileSync(eventsPath, "utf8"));
   if (events.length === 0) {
-    process.stdout.write(kleur.yellow("Telemetry log is empty. No rule events recorded yet.\n"));
+    if (format === "json") {
+      process.stdout.write(JSON.stringify({ status: "empty_log", malformed }, null, 2) + "\n");
+    } else {
+      process.stdout.write(kleur.yellow("Telemetry log is empty. No rule events recorded yet.\n"));
+    }
     return;
   }
 
@@ -195,7 +233,44 @@ function runRulesReport(): void {
   const stats = aggregateStats(events, known);
   const compileErrors = collectCompileErrors(events);
 
+  if (format === "json") {
+    process.stdout.write(JSON.stringify(toRulesJson(stats, events.length, malformed, compileErrors), null, 2) + "\n");
+    return;
+  }
+
   printRulesReport(stats, events.length, malformed, compileErrors);
+}
+
+function toRulesJson(
+  stats: Map<string, RuleStats>,
+  totalEvents: number,
+  malformed: number,
+  compileErrors: CompileError[]
+): unknown {
+  return {
+    generated_at: new Date().toISOString(),
+    total_events: totalEvents,
+    malformed_lines: malformed,
+    rules: [...stats.entries()].map(([id, s]) => {
+      const cls = classifyRule(s);
+      return {
+        id,
+        bucket: cls.bucket,
+        loaded: s.loadedCount,
+        cited: s.citedCount,
+        violations: s.violationCount,
+        judged_violations: s.judgedCount,
+        last_seen: s.lastSeen,
+        advice: cls.advice,
+      };
+    }),
+    compile_errors: compileErrors.map((ce) => ({
+      rule_id: ce.ruleId,
+      pattern: ce.pattern,
+      error: ce.error,
+      ts: ce.ts,
+    })),
+  };
 }
 
 interface CompileError {
@@ -248,15 +323,9 @@ function collectKnownRuleIds(): Set<string> {
       if (f.endsWith(".md")) candidates.push(join(".claude/rules", f));
     }
   }
-  // Require a dotted slug starting with a letter so docstring examples like
-  // `<!-- id: ... -->` don't produce phantom rule entries.
-  const idRx = /<!--\s*id:\s*([a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+)\s*-->/g;
   for (const path of candidates) {
     if (!existsSync(path)) continue;
-    const content = readFileSync(path, "utf8");
-    for (const m of content.matchAll(idRx)) {
-      if (m[1]) ids.add(m[1]);
-    }
+    for (const id of extractRuleIds(readFileSync(path, "utf8"))) ids.add(id);
   }
   return ids;
 }

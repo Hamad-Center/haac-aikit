@@ -157,4 +157,27 @@ describe("aikit report", () => {
     expect(stdout).toContain("Rules under pressure");
     expect(stdout).toContain("code-style.no-console-log");
   });
+
+  it("splits unmatched-pattern hits into their own section", async () => {
+    // No rule declared in AGENTS.md, but pattern violations recorded.
+    writeAgentsMd([]);
+    writeEvents([
+      { ts: "2026-04-29T00:00:00Z", event: "violation", rule_id: "code-style.no-console-log", file: "src/x.ts" },
+      { ts: "2026-04-29T00:01:00Z", event: "violation", rule_id: "code-style.no-console-log", file: "src/y.ts" },
+    ]);
+
+    await runReport({ _: ["report"] } as never);
+
+    expect(stdout).toContain("Pattern hits without a declared rule");
+    expect(stdout).toContain("code-style.no-console-log");
+    // Should NOT be in "Rules under pressure" — it's not declared.
+    const underPressureIdx = stdout.indexOf("Rules under pressure");
+    const unmatchedIdx = stdout.indexOf("Pattern hits without a declared rule");
+    if (underPressureIdx >= 0 && unmatchedIdx >= 0) {
+      // If both sections render, the rule should appear after the unmatched header,
+      // not under "Rules under pressure".
+      const ruleIdx = stdout.indexOf("`code-style.no-console-log`");
+      expect(ruleIdx).toBeGreaterThan(unmatchedIdx);
+    }
+  });
 });
