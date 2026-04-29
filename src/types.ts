@@ -64,6 +64,7 @@ export interface WizardAnswers {
   scope: Scope;
   integrations: Integration[];
   shape: ProjectShape[];
+  specialtyAgents: string[];
 }
 
 export interface WriteResult {

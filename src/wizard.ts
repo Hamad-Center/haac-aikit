@@ -2,6 +2,20 @@ import * as p from "@clack/prompts";
 import kleur from "kleur";
 import type { Integration, ProjectShape, Scope, Tool, WizardAnswers } from "./types.js";
 
+export const SPECIALTY_TIER2_AGENTS = [
+  { value: "flake-hunter", label: "flake-hunter — diagnose intermittent test failures" },
+  { value: "simplifier", label: "simplifier — DRY, dead code, complexity reduction" },
+  { value: "prompt-engineer", label: "prompt-engineer — author/optimize prompts" },
+  { value: "evals-author", label: "evals-author — eval datasets & benchmarks" },
+  { value: "changelog-curator", label: "changelog-curator — generate CHANGELOG from commits" },
+  { value: "dependency-upgrader", label: "dependency-upgrader — npm major bumps + codemods" },
+] as const;
+
+export function defaultSpecialtyAgents(scope: Scope): string[] {
+  if (scope === "everything") return SPECIALTY_TIER2_AGENTS.map((a) => a.value);
+  return [];
+}
+
 const ALL_TOOLS: { value: Tool; label: string; hint: string }[] = [
   { value: "claude", label: "Claude Code", hint: "CLAUDE.md + .claude/" },
   { value: "cursor", label: "Cursor", hint: ".cursor/rules/" },
@@ -100,6 +114,14 @@ export async function runWizard(projectName: string): Promise<WizardAnswers> {
           required: false,
         });
       },
+
+      specialtyAgents: () =>
+        p.multiselect<string>({
+          message: "Include specialty agents? (debugger and pr-describer always installed)",
+          options: SPECIALTY_TIER2_AGENTS.map((a) => ({ value: a.value, label: a.label })),
+          required: false,
+          initialValues: [],
+        }),
     },
     {
       onCancel: () => {
@@ -116,5 +138,6 @@ export async function runWizard(projectName: string): Promise<WizardAnswers> {
     scope: (answers.scope as Scope) ?? "standard",
     integrations: (answers.integrations as Integration[]) ?? [],
     shape: (answers.shape as ProjectShape[]) ?? [],
+    specialtyAgents: (answers.specialtyAgents as string[]) ?? [],
   };
 }

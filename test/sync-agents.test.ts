@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runSync } from "../src/commands/sync.js";
 import type { AikitConfig } from "../src/types.js";
+import { defaultSpecialtyAgents, SPECIALTY_TIER2_AGENTS } from "../src/wizard.js";
 
 let tmpDir: string;
 let origCwd: string;
@@ -102,5 +103,21 @@ describe("sync — agents tier system", () => {
     await runSync({ _: ["sync"] });
 
     expect(existsSync(".claude/agents")).toBe(false);
+  });
+});
+
+describe("defaultSpecialtyAgents", () => {
+  it("returns [] for minimal scope", () => {
+    expect(defaultSpecialtyAgents("minimal")).toEqual([]);
+  });
+
+  it("returns [] for standard scope", () => {
+    expect(defaultSpecialtyAgents("standard")).toEqual([]);
+  });
+
+  it("returns all 6 specialty names for everything scope", () => {
+    const result = defaultSpecialtyAgents("everything");
+    expect(result).toHaveLength(6);
+    expect(result).toEqual(SPECIALTY_TIER2_AGENTS.map((a) => a.value));
   });
 });

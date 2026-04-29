@@ -3,7 +3,7 @@ import { basename } from "node:path";
 import { isDirtyTree, isGitRepo } from "../detect/gitState.js";
 import { readConfig, writeConfig } from "../fs/readConfig.js";
 import type { AikitConfig, CliArgs, Integration, ProjectShape, Scope, Tool } from "../types.js";
-import { runWizard } from "../wizard.js";
+import { defaultSpecialtyAgents, SPECIALTY_TIER2_AGENTS, runWizard } from "../wizard.js";
 
 export async function runInit(argv: CliArgs, headless: boolean): Promise<void> {
   const dryRun = argv["dry-run"];
@@ -36,7 +36,7 @@ export async function runInit(argv: CliArgs, headless: boolean): Promise<void> {
     const tools = parseTools(argv.tools);
     const scope = argv.preset ?? "standard";
     const integrations = defaultIntegrationsForScope(scope);
-    config = buildDefaultConfig(projectName, "", tools, scope, integrations, []);
+    config = buildDefaultConfig(projectName, "", tools, scope, integrations, [], defaultSpecialtyAgents(scope));
   } else {
     const answers = await runWizard(basename(process.cwd()));
     const defaultIntegrations = defaultIntegrationsForScope(answers.scope);
@@ -47,7 +47,8 @@ export async function runInit(argv: CliArgs, headless: boolean): Promise<void> {
       answers.tools,
       answers.scope,
       integrations,
-      answers.shape
+      answers.shape,
+      answers.specialtyAgents
     );
   }
 
@@ -78,8 +79,11 @@ function buildDefaultConfig(
   tools: Tool[],
   scope: Scope,
   integrations: Integration[],
-  shape: ProjectShape[]
+  shape: ProjectShape[],
+  specialtyAgents: string[]
 ): AikitConfig {
+  const agentTier2: "all" | string[] =
+    specialtyAgents.length === SPECIALTY_TIER2_AGENTS.length ? "all" : specialtyAgents;
   return {
     version: 1,
     projectName,
@@ -99,7 +103,7 @@ function buildDefaultConfig(
       otel: integrations.includes("otel"),
     },
     skills: { tier1: "all", tier2: "all", tier3: [] },
-    agents: { tier1: "all", tier2: "all", tier3: [] },
+    agents: { tier1: "all", tier2: agentTier2, tier3: [] },
     canonical: "AGENTS.md",
   };
 }
