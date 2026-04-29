@@ -99,6 +99,7 @@ function buildDefaultConfig(
       otel: integrations.includes("otel"),
     },
     skills: { tier1: "all", tier2: "all", tier3: [] },
+    agents: { tier1: "all", tier2: "all", tier3: [] },
     canonical: "AGENTS.md",
   };
 }
