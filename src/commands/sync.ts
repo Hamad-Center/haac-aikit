@@ -5,10 +5,10 @@ import { ensureGitignoreEntries } from "../fs/gitignore.js";
 import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
 import { resolveShapeAgents } from "../catalog/shape-agents.js";
 import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
 import { extractMarkerRegion } from "../render/markers.js";
-import type { CliArgs, WriteResult, AikitConfig } from "../types.js";
+import type { CliArgs, WriteResult, WriteOpts, AikitConfig } from "../types.js";
 
 export async function runSync(argv: CliArgs): Promise<void> {
   const dryRun = argv["dry-run"];
@@ -43,7 +43,7 @@ export async function runSync(argv: CliArgs): Promise<void> {
     if (config.scope !== "minimal") {
       results.push(safeWrite("docs/claude-md-reference.md", catalog.claudeMdReference(), { ...opts, useMarkers: false }));
       results.push(safeWrite(".claude/aikit-rules.json", catalog.aikitRulesJson(), { ...opts, useMarkers: false }));
-      results.push(...syncDir("rules/claude-rules", ".claude/rules", dryRun, [".md"]));
+      results.push(...syncDir("rules/claude-rules", ".claude/rules", opts, [".md"]));
     }
   }
   if (config.tools.includes("copilot")) {
@@ -74,33 +74,33 @@ export async function runSync(argv: CliArgs): Promise<void> {
 
   // Skills
   if (config.scope !== "minimal") {
-    results.push(...syncSkills("tier1", dryRun));
-    results.push(...syncSkills("tier2", dryRun));
+    results.push(...syncSkills("tier1", opts));
+    results.push(...syncSkills("tier2", opts));
   }
 
   // Hooks
   if (config.integrations.hooks) {
-    results.push(...syncHooks(dryRun));
+    results.push(...syncHooks(opts));
   }
 
   // Agents
   if (config.integrations.subagents) {
-    results.push(...syncAgents(config, dryRun));
+    results.push(...syncAgents(config, opts));
   }
 
   // Commands
   if (config.integrations.commands) {
-    results.push(...syncCommands(dryRun));
+    results.push(...syncCommands(opts));
   }
 
   // CI
   if (config.integrations.ci) {
-    results.push(...syncCI(dryRun));
+    results.push(...syncCI(opts));
   }
 
   // Everything tier
   if (config.integrations.devcontainer) {
-    results.push(...syncDir("devcontainer", ".devcontainer", dryRun, [".json"]));
+    results.push(...syncDir("devcontainer", ".devcontainer", opts, [".json"]));
   }
   if (config.integrations.otel) {
     results.push(safeWrite(".env.example", readCatalogFile("settings/env.example"), { dryRun, useMarkers: false }));
@@ -142,9 +142,13 @@ export async function runSync(argv: CliArgs): Promise<void> {
 }
 
 // Resolve the right action for a copy-style sync. Captures pre-write state
-// and compares content so we report `created` / `updated` / `skipped`
+// and compares content so we report `created` / `updated` / `skipped` / `conflict`
 // honestly instead of always saying `updated`.
-function copyAction(srcPath: string, destPath: string, dryRun: boolean): WriteResult {
+export function copyAction(
+  srcPath: string,
+  destPath: string,
+  opts: WriteOpts,
+): WriteResult {
   const existed = existsSync(destPath);
   const incoming = readFileSync(srcPath, "utf8");
   if (existed) {
@@ -152,12 +156,18 @@ function copyAction(srcPath: string, destPath: string, dryRun: boolean): WriteRe
     if (current === incoming) {
       return { path: destPath, action: "skipped" };
     }
+    if (!opts.force) {
+      return { path: destPath, action: "conflict" };
+    }
   }
-  if (!dryRun) copyFileSync(srcPath, destPath);
+  if (!opts.dryRun) {
+    mkdirSync(dirname(destPath), { recursive: true });
+    copyFileSync(srcPath, destPath);
+  }
   return { path: destPath, action: existed ? "updated" : "created" };
 }
 
-function syncSkills(tier: "tier1" | "tier2", dryRun: boolean): WriteResult[] {
+function syncSkills(tier: "tier1" | "tier2", opts: WriteOpts): WriteResult[] {
   const srcDir = join(CATALOG_ROOT, "skills", tier);
   const destDir = `.claude/skills`;
   const results: WriteResult[] = [];
@@ -165,16 +175,16 @@ function syncSkills(tier: "tier1" | "tier2", dryRun: boolean): WriteResult[] {
   if (!existsSync(srcDir)) return results;
 
   const files = readdirSync(srcDir).filter((f) => f.endsWith(".md"));
-  if (!dryRun) mkdirSync(destDir, { recursive: true });
+  if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
+    results.push(copyAction(join(srcDir, file), join(destDir, file), opts));
   }
 
   return results;
 }
 
-function syncHooks(dryRun: boolean): WriteResult[] {
+function syncHooks(opts: WriteOpts): WriteResult[] {
   const srcDir = join(CATALOG_ROOT, "hooks");
   const destDir = `.claude/hooks`;
   const results: WriteResult[] = [];
@@ -182,19 +192,19 @@ function syncHooks(dryRun: boolean): WriteResult[] {
   if (!existsSync(srcDir)) return results;
 
   const files = readdirSync(srcDir).filter((f) => f.endsWith(".sh") || f === "hooks.json");
-  if (!dryRun) mkdirSync(destDir, { recursive: true });
+  if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
+    results.push(copyAction(join(srcDir, file), join(destDir, file), opts));
   }
 
   return results;
 }
 
-function syncAgents(config: AikitConfig, dryRun: boolean): WriteResult[] {
+function syncAgents(config: AikitConfig, opts: WriteOpts): WriteResult[] {
   const results: WriteResult[] = [];
-  results.push(...syncAgentTier("tier1", config.agents?.tier1 ?? "all", dryRun));
-  results.push(...syncAgentTier("tier2", resolveTier2Set(config), dryRun));
+  results.push(...syncAgentTier("tier1", config.agents?.tier1 ?? "all", opts));
+  results.push(...syncAgentTier("tier2", resolveTier2Set(config), opts));
   return results;
 }
 
@@ -213,7 +223,7 @@ function resolveTier2Set(config: AikitConfig): "all" | string[] {
 function syncAgentTier(
   tier: "tier1" | "tier2",
   selection: "all" | string[],
-  dryRun: boolean,
+  opts: WriteOpts,
 ): WriteResult[] {
   const srcDir = join(CATALOG_ROOT, "agents", tier);
   const destDir = ".claude/agents";
@@ -228,17 +238,17 @@ function syncAgentTier(
   const agentsToInstall =
     selection === "all" ? allAgents : allAgents.filter((a) => selection.includes(a));
 
-  if (!dryRun) mkdirSync(destDir, { recursive: true });
+  if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const agent of agentsToInstall) {
     const src = join(srcDir, `${agent}.md`);
     const dest = join(destDir, `${agent}.md`);
-    results.push(copyAction(src, dest, dryRun));
+    results.push(copyAction(src, dest, opts));
   }
   return results;
 }
 
-function syncCommands(dryRun: boolean): WriteResult[] {
+function syncCommands(opts: WriteOpts): WriteResult[] {
   const srcDir = join(CATALOG_ROOT, "commands");
   const destDir = `.claude/commands`;
   const results: WriteResult[] = [];
@@ -246,16 +256,16 @@ function syncCommands(dryRun: boolean): WriteResult[] {
   if (!existsSync(srcDir)) return results;
 
   const files = readdirSync(srcDir).filter((f) => f.endsWith(".md"));
-  if (!dryRun) mkdirSync(destDir, { recursive: true });
+  if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
+    results.push(copyAction(join(srcDir, file), join(destDir, file), opts));
   }
 
   return results;
 }
 
-function syncCI(dryRun: boolean): WriteResult[] {
+function syncCI(opts: WriteOpts): WriteResult[] {
   const srcDir = join(CATALOG_ROOT, "ci");
   const destDir = `.github/workflows`;
   const results: WriteResult[] = [];
@@ -263,10 +273,10 @@ function syncCI(dryRun: boolean): WriteResult[] {
   if (!existsSync(srcDir)) return results;
 
   const files = readdirSync(srcDir).filter((f) => f.endsWith(".yml"));
-  if (!dryRun) mkdirSync(destDir, { recursive: true });
+  if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
+    results.push(copyAction(join(srcDir, file), join(destDir, file), opts));
   }
 
   return results;
@@ -275,7 +285,7 @@ function syncCI(dryRun: boolean): WriteResult[] {
 function syncDir(
   catalogSubdir: string,
   destDir: string,
-  dryRun: boolean,
+  opts: WriteOpts,
   extensions = [".md", ".json", ".yml", ".yaml"]
 ): WriteResult[] {
   const srcDir = join(CATALOG_ROOT, catalogSubdir);
@@ -286,10 +296,10 @@ function syncDir(
   const files = readdirSync(srcDir).filter((f) =>
     extensions.some((ext) => f.endsWith(ext))
   );
-  if (!dryRun) mkdirSync(destDir, { recursive: true });
+  if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
 
   for (const file of files) {
-    results.push(copyAction(join(srcDir, file), join(destDir, file), dryRun));
+    results.push(copyAction(join(srcDir, file), join(destDir, file), opts));
   }
 
   return results;

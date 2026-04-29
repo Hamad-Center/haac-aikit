@@ -72,6 +72,11 @@ export interface WriteResult {
   action: "created" | "updated" | "skipped" | "conflict";
 }
 
+export interface WriteOpts {
+  dryRun: boolean;
+  force: boolean;
+}
+
 export type ConflictResolution = "replace" | "keep" | "replace_all" | "skip_all";
 
 export type Tier3Slot = "agents" | "skills" | null;
