@@ -9,6 +9,7 @@ This folder is the deep documentation for haac-aikit. The repo's top-level [READ
 | [observability.md](observability.md) | Rule observability — telemetry hooks, the `.aikit/events.jsonl` schema, the LLM judge, `aikit doctor --rules`, and `aikit report`. The flagship feature. |
 | [dialects.md](dialects.md) | Per-tool translation system. Cursor MDC ships in 0.4.0; Claude / Aider / Copilot / Gemini are queued. Includes how to add a new translator. |
 | [learn.md](learn.md) | `aikit learn` — mines PR review history for repeated correction patterns, clusters by token similarity, proposes rules. Tuning knobs and CI patterns included. |
+| [agents.md](agents.md) | Tier system, roster, and model rationale for the 19 shipped agents. |
 | [claude-md-reference.md](claude-md-reference.md) | Anthropic's 2026 CLAUDE.md / memory features in one place. Source-of-truth for what the standard mechanisms are; `observability.md` covers haac-aikit's extensions on top. |
 
 ## Reading order
