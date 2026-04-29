@@ -77,6 +77,7 @@ haac-aikit gives you the curated baseline like other kits do (skills, hooks, age
 
 - 18 process skills, organised into Tier 1 (always-on) and Tier 2 (opt-in). Skill bodies only load when triggered, so the at-rest cost is roughly 100 tokens each.
 - **Agents** in `.claude/agents/`: 10 always-on (planner, reviewer, debugger, pr-describer, …) plus opt-in specialty agents (simplifier, prompt-engineer, evals-author, …) selected via the wizard.
+- **Conflict-aware sync**: if you've modified an installed template (e.g., `.claude/agents/reviewer.md`), `aikit sync` and `aikit update` now prompt before overwriting — instead of silently replacing it.
 - Safety hooks that block dangerous bash, force-push to main, secret commits, and reads of sensitive files.
 - Observability hooks (see below).
 - A starter `.claude/aikit-rules.json` with regex patterns for common things like no `console.log`, no default exports, no `any`.
