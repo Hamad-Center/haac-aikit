@@ -24,4 +24,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `aikit diff` was silently broken for agents (reported nothing) due to the now-empty flat `catalog/agents/` directory; replaced with tier-walk.
 
 ### Migration
-- Existing `.aikitrc.json` files (which lack an `agents:` block) sync no-op — every previously-installed agent remains installed at its original path.
+- Existing 0.5.x configs (no `agents:` block) keep all previously-installed agents and additionally pick up the two new tier1 agents (`debugger`, `pr-describer`). No file is removed and no schema change is required.

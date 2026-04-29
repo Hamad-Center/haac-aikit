@@ -145,6 +145,17 @@ function updateConfigForAddition(configPath: string | undefined, item: FoundItem
       message = `Added "${shape}" to .aikitrc.json shape (so sync re-installs ${item.name})`;
     }
     const agentTier = detectAgentTier(item.name);
+    if (agentTier === "tier2" && !shape) {
+      const currentAgents = config.agents ?? { tier1: "all", tier2: "all", tier3: [] };
+      const tier2 = currentAgents.tier2;
+      if (tier2 !== "all" && !tier2.includes(item.name)) {
+        updated = {
+          ...(updated ?? config),
+          agents: { ...currentAgents, tier2: [...tier2, item.name] },
+        };
+        message = `Added "${item.name}" to .aikitrc.json agents.tier2`;
+      }
+    }
     if (agentTier === "tier3" && !(config.agents?.tier3 ?? []).includes(item.name)) {
       const currentAgents = config.agents ?? { tier1: "all", tier2: "all", tier3: [] };
       updated = {

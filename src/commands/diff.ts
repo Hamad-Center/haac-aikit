@@ -3,7 +3,8 @@ import { join } from "node:path";
 import kleur from "kleur";
 import { readConfig } from "../fs/readConfig.js";
 import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
-import type { CliArgs } from "../types.js";
+import { resolveShapeAgents } from "../catalog/shape-agents.js";
+import type { AikitConfig, CliArgs } from "../types.js";
 
 export async function runDiff(argv: CliArgs): Promise<void> {
   const config = readConfig(argv.config);
@@ -39,7 +40,7 @@ export async function runDiff(argv: CliArgs): Promise<void> {
   checkCatalogDir("skills/tier1", ".claude/skills", missing, drifted);
   checkCatalogDir("skills/tier2", ".claude/skills", missing, drifted);
   checkCatalogDir("agents/tier1", ".claude/agents", missing, drifted);
-  checkCatalogDir("agents/tier2", ".claude/agents", missing, drifted);
+  checkCatalogAgentsTier2(config, missing, drifted);
   checkCatalogDir("hooks", ".claude/hooks", missing, drifted, [".sh"]);
 
   // Claude-only assets shipped at standard+ scope
@@ -88,6 +89,45 @@ function extractRegion(content: string, begin: string, end: string): string {
   const ei = content.indexOf(end);
   if (bi === -1 || ei === -1) return "";
   return content.slice(bi + begin.length, ei).trim();
+}
+
+function checkCatalogAgentsTier2(
+  config: AikitConfig,
+  missing: string[],
+  drifted: string[],
+): void {
+  const tier2Selection = config.agents?.tier2;
+  if (tier2Selection === "all") {
+    checkCatalogDir("agents/tier2", ".claude/agents", missing, drifted);
+    return;
+  }
+
+  const expected = new Set<string>(
+    Array.isArray(tier2Selection) ? tier2Selection : []
+  );
+  for (const agent of resolveShapeAgents(config.shape)) {
+    expected.add(agent);
+  }
+
+  // No expected agents → nothing to check.
+  if (expected.size === 0) return;
+
+  const tier2Dir = join(CATALOG_ROOT, "agents", "tier2");
+  if (!existsSync(tier2Dir)) return;
+
+  for (const name of expected) {
+    const catalogPath = join(tier2Dir, `${name}.md`);
+    const installedPath = join(".claude/agents", `${name}.md`);
+    if (!existsSync(catalogPath)) continue; // user-named agent not in catalog — ignore
+    if (!existsSync(installedPath)) {
+      missing.push(`agents/${name}.md`);
+      continue;
+    }
+    // drift check (compare contents)
+    if (readFileSync(catalogPath, "utf8") !== readFileSync(installedPath, "utf8")) {
+      drifted.push(`agents/${name}.md`);
+    }
+  }
 }
 
 function checkCatalogDir(
