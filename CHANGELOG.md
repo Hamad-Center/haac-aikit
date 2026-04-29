@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-04-30
+
+### Fixed
+- `husky` integration silently failed: enabling it had no effect because `runSync` lacked a handler. Now correctly writes `.husky/pre-commit`, `.husky/commit-msg`, etc. with the executable bit set.
+- `plugin` integration silently failed: enabling it had no effect. Now correctly writes `.claude/plugin/plugin.json` with `projectName` interpolated.
+- Hook scripts shipped with the wrong file mode — installed hooks were not executable, so Claude Code could not invoke them. The catalog source now has the executable bit set, and `copyAction` defensively re-applies `0o755` to any `.sh` file or any file under `.claude/hooks/` or `.husky/`.
+- `inferTier3Slot` would have matched any path containing `/agents/` or `/skills/`. Now requires the `.claude/` prefix.
+
+### Internal
+- `WriteResult.src` is now populated on all `copyAction` return branches (was conflict-only) for consistency with future code that may need the catalog source path.
+- `syncDir(...)` now treats an empty `extensions` array as "match all files".
+
 ## [0.7.0] - 2026-04-29
 
 ### Added
