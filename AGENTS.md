@@ -33,7 +33,8 @@ Run a single test: `npx vitest run test/path.test.ts -t "name"`.
 - `catalog/rules/`       — AGENTS.md template, per-tool shims, `aikit-rules.json` (pattern config), `claude-rules/example.md`
 - `catalog/hooks/`       — bash hooks: safety (block-*) + telemetry (log-rule-event, check-pattern-violations, judge-rule-compliance)
 - `catalog/docs/`        — `claude-md-reference.md` shipped to downstream users at scope ≥ standard
-- `catalog/{skills,agents,commands,ci,mcp,settings,devcontainer,husky,plugin}/` — other shipped artefacts
+- `catalog/agents/tier1/`, `catalog/agents/tier2/` — tiered agent roster (mirrors `catalog/skills/`)
+- `catalog/{skills,commands,ci,mcp,settings,devcontainer,husky,plugin}/` — other shipped artefacts
 - `test/`                — vitest specs (co-located by feature)
 - `docs/`                — project-internal docs: observability/dialects/learn deep dives, claude-md-reference
 - `scripts/`             — repo tooling (`catalog-check.js`, etc.)
@@ -78,7 +79,7 @@ The CLI itself writes only inside the target repo and respects `--dry-run` / `--
 - **Dirty-tree / git-repo guards.** `src/detect/` blocks writes when the tree is dirty or running in CI. `--yes` / `--force` bypass; `--dry-run` previews. Don't remove these guards casually — they're the safety net for the whole CLI.
 - **AGENTS.md ≤200 lines.** Anthropic best-practice limit (and a self-imposed catalog rule). Push verbose docs into `docs/` or `catalog/skills/`.
 - **Headless mode.** `--yes` + non-interactive stdin treats `init` as the default command. Tests covering CI invocation must exercise this path.
-- **Tier system.** Skills are tiered: `tier1` (always-on), `tier2` (opt-in), `tier3` (custom). Don't promote tier2 → tier1 without considering token cost — every always-on skill is paid context for every user.
+- **Tier system.** Skills AND agents are tiered: `tier1` (always-on), `tier2` (opt-in), `tier3` (user-authored, sync-skipped). Don't promote tier2 → tier1 without considering token cost — every always-on agent or skill is paid context for every user.
 - **Telemetry hooks must never block the parent tool call.** `log-rule-event.sh`, `check-pattern-violations.sh`, and `judge-rule-compliance.sh` always echo `{"decision":"approve"}` and exit 0, even on internal errors. The `2>/dev/null || true` and `trap '... approve ...' EXIT` patterns are load-bearing — don't remove them.
 - **Rule IDs follow `topic.slug` format.** Regex `[a-zA-Z][a-zA-Z0-9_-]*\.[a-zA-Z0-9._-]+`. Required: starts with a letter, contains at least one dot. Single-segment slugs (`foo`) and dotless examples (`...`) are rejected by design — prevents docstring examples from producing phantom telemetry events.
 - **`adherence_score` may be `null`.** `aikit report` returns `null` with `basis: "no-evidence"` when no `cited` events exist (i.e. the LLM judge isn't enabled). Don't fall back to load-counts as positive evidence; that was the pre-fix bug from commit 96844ee.
