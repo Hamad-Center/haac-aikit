@@ -23,6 +23,7 @@ export type Integration =
   | "otel";
 
 export type SkillTier = "tier1" | "tier2" | "tier3";
+export type AgentTier = "tier1" | "tier2" | "tier3";
 
 export interface AikitConfig {
   $schema?: string;
@@ -44,6 +45,11 @@ export interface AikitConfig {
     otel?: boolean;
   };
   skills: {
+    tier1: "all" | string[];
+    tier2: "all" | string[];
+    tier3: string[];
+  };
+  agents?: {
     tier1: "all" | string[];
     tier2: "all" | string[];
     tier3: string[];
