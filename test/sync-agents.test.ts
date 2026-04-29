@@ -70,15 +70,14 @@ describe("sync — agents tier system", () => {
     writeConfig({
       ...baseConfig,
       shape: ["web"],
-      agents: { tier1: "all", tier2: ["simplifier"], tier3: [] },
+      agents: { tier1: "all", tier2: ["mobile"], tier3: [] },
     });
     await runSync({ _: ["sync"] });
 
     const agents = listAgents();
-    expect(agents).toContain("frontend.md"); // shape-derived
-    // simplifier doesn't exist as a catalog file yet (added in Task 10), so it
-    // won't be installed here — the test asserts the *attempt* via shape-derived presence.
-    expect(agents).not.toContain("prompt-engineer.md"); // not selected
+    expect(agents).toContain("frontend.md"); // shape-derived (shape: web)
+    expect(agents).toContain("mobile.md"); // explicit opt-in
+    expect(agents).not.toContain("backend.md"); // neither shape-derived nor opted-in
   });
 
   it("installs every tier2 agent when agents.tier2 is 'all'", async () => {
