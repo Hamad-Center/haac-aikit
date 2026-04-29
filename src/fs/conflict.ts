@@ -8,8 +8,8 @@ import { formatUnifiedDiff } from "./diff.js";
  * Returns null for paths without a tier3 mechanism (commands, hooks, others).
  */
 export function inferTier3Slot(filePath: string): Tier3Slot {
-  if (filePath.includes("/agents/") && filePath.endsWith(".md")) return "agents";
-  if (filePath.includes("/skills/") && filePath.endsWith(".md")) return "skills";
+  if ((filePath.includes("/.claude/agents/") || filePath.startsWith(".claude/agents/")) && filePath.endsWith(".md")) return "agents";
+  if ((filePath.includes("/.claude/skills/") || filePath.startsWith(".claude/skills/")) && filePath.endsWith(".md")) return "skills";
   return null;
 }
 

@@ -4,9 +4,10 @@ import { safeWrite } from "../fs/safeWrite.js";
 import { ensureGitignoreEntries } from "../fs/gitignore.js";
 import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
 import { resolveShapeAgents } from "../catalog/shape-agents.js";
-import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync, chmodSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
+import { interpolate } from "../render/template.js";
 import { extractMarkerRegion } from "../render/markers.js";
 import { interactivePrompt, inferTier3Slot, type ConflictPrompt } from "../fs/conflict.js";
 import type { CliArgs, WriteResult, WriteOpts, AikitConfig, ConflictResolution } from "../types.js";
@@ -105,6 +106,14 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
   }
   if (config.integrations.otel) {
     results.push(safeWrite(".env.example", readCatalogFile("settings/env.example"), { dryRun, useMarkers: false }));
+  }
+  if (config.integrations.husky) {
+    results.push(...syncDir("husky", ".husky", opts, []));
+  }
+  if (config.integrations.plugin) {
+    const tmpl = readCatalogFile("plugin/plugin.json");
+    const content = interpolate(tmpl, { projectName: config.projectName });
+    results.push(safeWrite(".claude/plugin/plugin.json", content, { ...opts, useMarkers: false }));
   }
 
   ensureGitignoreEntries(dryRun);
@@ -230,7 +239,7 @@ export function copyAction(
   if (existed) {
     const current = readFileSync(destPath, "utf8");
     if (current === incoming) {
-      return { path: destPath, action: "skipped" };
+      return { path: destPath, action: "skipped", src: srcPath };
     }
     if (!opts.force) {
       return { path: destPath, action: "conflict", src: srcPath };
@@ -239,8 +248,11 @@ export function copyAction(
   if (!opts.dryRun) {
     mkdirSync(dirname(destPath), { recursive: true });
     copyFileSync(srcPath, destPath);
+    if (destPath.endsWith(".sh") || destPath.includes("/.husky/") || destPath.includes("/.claude/hooks/")) {
+      chmodSync(destPath, 0o755);
+    }
   }
-  return { path: destPath, action: existed ? "updated" : "created" };
+  return { path: destPath, action: existed ? "updated" : "created", src: srcPath };
 }
 
 function syncSkills(tier: "tier1" | "tier2", opts: WriteOpts): WriteResult[] {
@@ -370,7 +382,7 @@ function syncDir(
   if (!existsSync(srcDir)) return results;
 
   const files = readdirSync(srcDir).filter((f) =>
-    extensions.some((ext) => f.endsWith(ext))
+    extensions.length === 0 || extensions.some((ext) => f.endsWith(ext))
   );
   if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
 
