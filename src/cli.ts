@@ -32,7 +32,7 @@ FLAGS
   --no-color          Disable ANSI colours
   --config=<path>     Use a specific .aikitrc.json location
   --tools=<list>      Comma-separated tool list (claude,cursor,copilot,...)
-  --preset=<scope>    minimal | standard | everything
+  --scope=<scope>     minimal | standard | everything  (--preset is an alias)
   --rules             (with doctor)  Show rule-observability buckets
   --format=<fmt>      (with report / doctor --rules)  markdown | json
   --since=<date>      (with report)  Restrict events to after this ISO date
@@ -44,8 +44,8 @@ FLAGS
 async function main(): Promise<void> {
   const argv = mri<CliArgs>(process.argv.slice(2), {
     boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules"],
-    string: ["config", "tools", "preset", "format", "since", "limit"],
-    alias: { y: "yes", h: "help", v: "version" },
+    string: ["config", "tools", "preset", "scope", "format", "since", "limit"],
+    alias: { y: "yes", h: "help", v: "version", scope: "preset" },
     default: {
       yes: false,
       "dry-run": false,
