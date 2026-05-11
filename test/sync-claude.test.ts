@@ -86,3 +86,32 @@ describe("sync — Claude 2026 assets", () => {
     expect(agents).toContain("docs/claude-md-reference.md");
   });
 });
+
+describe("sync — HTML design system", () => {
+  it("ships docs/aikit-html-design-system.html at scope=standard with claude", async () => {
+    writeConfig(baseConfig);
+
+    await runSync({ _: ["sync"] });
+
+    expect(existsSync("docs/aikit-html-design-system.html")).toBe(true);
+    const html = readFileSync("docs/aikit-html-design-system.html", "utf8");
+    expect(html).toContain("--color-bg");
+    expect(html).toContain("Customize the CSS variables above");
+  });
+
+  it("does NOT ship docs/aikit-html-design-system.html at scope=minimal", async () => {
+    writeConfig({ ...baseConfig, scope: "minimal" });
+
+    await runSync({ _: ["sync"] });
+
+    expect(existsSync("docs/aikit-html-design-system.html")).toBe(false);
+  });
+
+  it("does NOT ship docs/aikit-html-design-system.html when claude is not selected", async () => {
+    writeConfig({ ...baseConfig, tools: ["cursor"] });
+
+    await runSync({ _: ["sync"] });
+
+    expect(existsSync("docs/aikit-html-design-system.html")).toBe(false);
+  });
+});
