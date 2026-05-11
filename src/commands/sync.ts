@@ -44,6 +44,7 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
     results.push(safeWrite(".claude/settings.json", catalog.settingsJson(), { ...opts, useMarkers: false }));
     if (config.scope !== "minimal") {
       results.push(safeWrite("docs/claude-md-reference.md", catalog.claudeMdReference(), { ...opts, useMarkers: false }));
+      results.push(safeWrite("docs/aikit-html-design-system.html", catalog.htmlDesignSystem(), { ...opts, useMarkers: false }));
       results.push(safeWrite(".claude/aikit-rules.json", catalog.aikitRulesJson(), { ...opts, useMarkers: false }));
       results.push(...syncDir("rules/claude-rules", ".claude/rules", opts, [".md"]));
     }

@@ -40,6 +40,7 @@ export function loadCatalog() {
     mcpJson: () => read("mcp/mcp.json"),
     settingsJson: () => read("settings/settings.json"),
     claudeMdReference: () => read("docs/claude-md-reference.md"),
+    htmlDesignSystem: () => read("docs/html-design-system.html"),
     aikitRulesJson: () => read("rules/aikit-rules.json"),
   };
 }
