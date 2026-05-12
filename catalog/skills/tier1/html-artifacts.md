@@ -1,7 +1,7 @@
 ---
 name: html-artifacts
 description: Use when producing structured output that benefits from rich layout, comparison, drill-in, or interaction — specs, plans, PR reviews, design systems, prototypes, diagrams, decks, research explainers, reports, and custom editors. Scaffolds from 20 forked reference templates at `.aikit/templates/html-artifacts/` and fills them with project context. Maintains a gallery at `.aikit/artifacts/index.html`.
-version: "2.1.0"
+version: "2.2.0"
 source: haac-aikit
 license: MIT
 inspired-by: https://thariqs.github.io/html-effectiveness (templates forked with permission, 2026-05-12)
@@ -36,6 +36,27 @@ When conditions match but the user didn't ask for HTML, say one sentence and wai
 - **AUTO-GENERATED pill**: top-right badge on agent-produced artifacts so readers know the origin
 - **Prompt callout**: exploration / planning artifacts preserve the originating user request in a cream-tinted box at top
 - **Density-adaptive rendering**: when the artifact's total visible items (milestones + risks + cards + rows across all sections) is ≤ 6, drop decorations designed for dense pages — section numbers, tag chips, colored dot indicators, multi-column summary cards. These visuals were tuned for ~12-item artifacts; on sparse content they read as noise instead of hierarchy. The point of structure is signal; if there's little content, decoration buries it.
+
+## Voice & plain-language rule
+
+The default reader is a smart non-specialist taking a decision. They should understand every sentence on first read without expanding tooltips, looking up jargon, or having prior domain context.
+
+**Four sub-rules:**
+
+1. **One concept per sentence** — no "X with Y and Z" compounds.
+2. **Plain-language verb + concrete object** — "Load images only when the reader scrolls to them" beats "Implement lazy-loading via IntersectionObserver."
+3. **Jargon lives in tag chips, `<code>` spans, or collapsed `<details>`** — never in the main reading path.
+4. **Concrete first, abstract term in parens** — "Make sure failed requests retry safely (idempotent)" beats "Idempotent retry on failure."
+
+**Three side-by-side examples (bad → good):**
+
+| Bad | Good |
+| --- | --- |
+| "Schema & API contract — tRPC router stubs reviewed before anything else lands" | "Define the API the backend will expose. Review the contract before any UI work." |
+| "Optimistic insert with rollback on failure, one level of nesting only" | "Show the comment immediately. Roll back if the server rejects it. One level of replies — no deeper threads." |
+| "Fan-out via realtime channel, per-user read cursors track unread state" | "When a card is open, listen for new comments on it. Push updates to everyone watching." |
+
+The technical details (`tRPC`, `optimistic insert`, `fan-out`) still appear in the artifact — but as tag chips beneath the prose, not in the reading path. The visible layer is decision-grade scannable; the chip layer keeps the artifact grep-able and AI-readable.
 
 ## Pattern playbook (9 patterns, aligned with the source)
 
@@ -106,6 +127,7 @@ When conditions match but the user didn't ask for HTML, say one sentence and wai
 - Missing keyboard nav for editors — native form controls, not div-clicks
 - Missing AUTO-GENERATED badge on agent-produced artifacts — readers deserve to know
 - Missing provenance footer — "where did these numbers come from?" should always be answerable
+- **Jargon-heavy main prose** — using `tRPC`, `fan-out`, `idempotent`, `IntersectionObserver` in the reading path makes the artifact unreadable for non-specialists. Plain-language verb + concrete object in prose; technical terms in tag chips and code blocks.
 
 ## Template scaffolding
 
@@ -133,6 +155,7 @@ When conditions match but the user didn't ask for HTML, say one sentence and wai
    - All class names, layout grids, and microinteraction conventions
    - All cross-cutting techniques (sticky positioning, `scroll-margin-top`, `<details>` collapsibles, native form controls)
    - The pattern's visual language (severity colors, badge styles, dot indicators, monospace meta text)
+   - **Apply the Voice & plain-language rule** when writing prose into content nodes (`<p>`, `<h3>`, milestone bodies, risk explanations). Jargon goes in tag chips, `<code>` spans, or `<details>` — never in main prose.
 6. **Add required `<head>` elements**: `<title>`, `<meta name="description">`, and `<meta name="aikit-pattern" content="...">` with one of: `Exploration`, `Code Review`, `Design`, `Prototype`, `Illustrations`, `Deck`, `Research`, `Report`, `Editor`.
 7. **Add AUTO-GENERATED pill** top-right and **provenance footer** (`Sources: ... — generated <ISO timestamp>`).
 8. **Save** to `.aikit/artifacts/NN-<slug>.html` (increment `NN` from existing files).
