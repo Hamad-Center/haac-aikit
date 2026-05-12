@@ -8,6 +8,16 @@ import { defaultSpecialtyAgents, SPECIALTY_TIER2_AGENTS, runWizard } from "../wi
 export async function runInit(argv: CliArgs, headless: boolean): Promise<void> {
   const dryRun = argv["dry-run"];
 
+  // Positional shorthand: `aikit init html` → scope=html, headless install
+  // Equivalent to `aikit init --scope html --yes`. The positional arg routes
+  // through the same code path as the flag form.
+  const positionalScope = argv._?.[1];
+  if (positionalScope === "html") {
+    argv.preset = "html";
+    argv.yes = true;
+    headless = true;
+  }
+
   // Dirty-tree check (skip in CI / with flag)
   if (!argv["skip-git-check"] && !headless && isGitRepo() && isDirtyTree()) {
     const proceed = await p.confirm({
@@ -33,8 +43,11 @@ export async function runInit(argv: CliArgs, headless: boolean): Promise<void> {
 
   if (headless || argv.yes) {
     const projectName = basename(process.cwd());
-    const tools = parseTools(argv.tools);
-    const scope = argv.preset ?? "standard";
+    const scope = (argv.preset ?? "standard") as Scope;
+    // html scope defaults to claude-only since the /html slash command is
+    // Claude Code-specific. Other tools can still pick up the templates if
+    // explicitly requested via --tools.
+    const tools = scope === "html" && !argv.tools ? (["claude"] as Tool[]) : parseTools(argv.tools);
     const integrations = defaultIntegrationsForScope(scope);
     config = buildDefaultConfig(projectName, "", tools, scope, integrations, [], defaultSpecialtyAgents(scope));
   } else {
@@ -68,6 +81,7 @@ function parseTools(raw?: string): Tool[] {
 }
 
 function defaultIntegrationsForScope(scope: Scope): Integration[] {
+  if (scope === "html") return [];
   if (scope === "minimal") return ["mcp"];
   if (scope === "standard") return ["mcp", "hooks", "commands", "subagents", "ci", "husky"];
   return ["mcp", "hooks", "commands", "subagents", "ci", "husky", "devcontainer", "plugin", "otel"];

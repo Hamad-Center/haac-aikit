@@ -6,6 +6,13 @@
 
 One command drops a working AI-coding setup into any repo — rules, skills, safety hooks, subagents, MCP stub, CI templates — for Claude Code, Cursor, Copilot, Windsurf, Aider, Gemini CLI, and Codex.
 
+> [!TIP]
+> **Just want HTML output from Claude Code?** Skip the full kit and install only the html-artifacts skill + 20 templates:
+>
+> ```bash
+> npx haac-aikit init html
+> ```
+
 ## Quickstart
 
 ```bash

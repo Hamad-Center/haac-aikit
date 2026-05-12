@@ -18,6 +18,9 @@ USAGE
 
 COMMANDS
   (default)         Interactive wizard — drop a complete AI setup into this repo
+  init html         Install only the html-artifacts skill + 20 templates + /html
+                    command. No AGENTS.md, no hooks, no CI. (shorthand for
+                    \`aikit init --scope html --yes\`)
   sync              Regenerate per-tool files from .aikitrc.json (idempotent)
   update            Pull latest templates; show diff; prompt before writing
   diff              Show drift between current state and a fresh generation
@@ -40,7 +43,7 @@ FLAGS
   --no-color          Disable ANSI colours
   --config=<path>     Use a specific .aikitrc.json location
   --tools=<list>      Comma-separated tool list (claude,cursor,copilot,...)
-  --scope=<scope>     minimal | standard | everything  (--preset is an alias)
+  --scope=<scope>     minimal | standard | everything | html  (--preset is an alias)
   --rules             (with doctor)  Show rule-observability buckets
   --format=<fmt>      (with report / doctor --rules)  markdown | json
   --since=<date>      (with report)  Restrict events to after this ISO date

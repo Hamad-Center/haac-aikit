@@ -77,6 +77,11 @@ export async function runWizard(projectName: string): Promise<WizardAnswers> {
           message: "Installation scope",
           options: [
             {
+              value: "html",
+              label: "Just HTML artifacts",
+              hint: "html-artifacts skill + 20 templates + /html command. No AGENTS.md, no agents, no hooks.",
+            },
+            {
               value: "minimal",
               label: "Minimal",
               hint: "AGENTS.md + rule shims + .mcp.json",
@@ -96,6 +101,7 @@ export async function runWizard(projectName: string): Promise<WizardAnswers> {
         }),
 
       integrations: ({ results }) => {
+        if (results.scope === "html") return Promise.resolve(undefined);
         if (results.scope !== "everything") return Promise.resolve(undefined);
         return p.multiselect<Integration>({
           message: "Optional integrations",
@@ -106,7 +112,7 @@ export async function runWizard(projectName: string): Promise<WizardAnswers> {
       },
 
       shape: ({ results }) => {
-        if (results.scope === "minimal") return Promise.resolve(undefined);
+        if (results.scope === "minimal" || results.scope === "html") return Promise.resolve(undefined);
         return p.multiselect<ProjectShape>({
           message: "Project shape  (adds domain-specialist agents)",
           options: ALL_SHAPES,
@@ -116,7 +122,7 @@ export async function runWizard(projectName: string): Promise<WizardAnswers> {
       },
 
       specialtyAgents: ({ results }) => {
-        if (results.scope === "minimal") return Promise.resolve(undefined);
+        if (results.scope === "minimal" || results.scope === "html") return Promise.resolve(undefined);
         return p.multiselect<string>({
           message: "Include specialty agents? (debugger and pr-describer always installed)",
           options: SPECIALTY_TIER2_AGENTS.map((a) => ({ value: a.value, label: a.label })),

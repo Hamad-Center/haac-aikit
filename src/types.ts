@@ -7,7 +7,7 @@ export type Tool =
   | "gemini"
   | "codex";
 
-export type Scope = "minimal" | "standard" | "everything";
+export type Scope = "minimal" | "standard" | "everything" | "html";
 
 export type ProjectShape = "web" | "mobile" | "fullstack" | "backend" | "library";
 

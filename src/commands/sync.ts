@@ -28,7 +28,20 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
   const results: WriteResult[] = [];
   const opts = { dryRun, force };
 
+  // html scope — minimal slice: just the html-artifacts skill, the /html
+  // command (claude only), and the templates. The rest of the integration
+  // blocks below are gated to skip when scope === "html". Post-write
+  // pipeline (gitignore, conflicts, summary) runs for both paths.
+  if (config.scope === "html") {
+    results.push(...syncOneSkill("tier1", "html-artifacts", opts));
+    if (config.tools.includes("claude")) {
+      results.push(...syncOneCommand("html", opts));
+    }
+    results.push(...syncTemplates(opts));
+  }
+
   // Rules
+  if (config.scope !== "html") {
   const agentsMdContent = catalog.agentsMd({
     projectName: config.projectName,
     description: config.projectDescription ?? "",
@@ -123,6 +136,7 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
     const content = interpolate(tmpl, { projectName: config.projectName });
     results.push(safeWrite(".claude/plugin/plugin.json", content, { ...opts, useMarkers: false }));
   }
+  } // end: if (config.scope !== "html")
 
   ensureGitignoreEntries(dryRun);
 
@@ -278,6 +292,26 @@ function syncSkills(tier: "tier1" | "tier2", opts: WriteOpts): WriteResult[] {
   }
 
   return results;
+}
+
+// Single-skill sync, used by the html scope to copy only one skill file
+// instead of every tier1/tier2 entry. Filename is `<name>.md`.
+function syncOneSkill(tier: "tier1" | "tier2", name: string, opts: WriteOpts): WriteResult[] {
+  const src = join(CATALOG_ROOT, "skills", tier, `${name}.md`);
+  const destDir = `.claude/skills`;
+  if (!existsSync(src)) return [];
+  if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
+  return [copyAction(src, join(destDir, `${name}.md`), opts)];
+}
+
+// Single-command sync, used by the html scope to copy only one command file.
+// Filename is `<name>.md`.
+function syncOneCommand(name: string, opts: WriteOpts): WriteResult[] {
+  const src = join(CATALOG_ROOT, "commands", `${name}.md`);
+  const destDir = `.claude/commands`;
+  if (!existsSync(src)) return [];
+  if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
+  return [copyAction(src, join(destDir, `${name}.md`), opts)];
 }
 
 function syncTemplates(opts: WriteOpts): WriteResult[] {
