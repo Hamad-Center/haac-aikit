@@ -1,7 +1,7 @@
 ---
 name: html-artifacts
 description: Use when producing structured output that benefits from rich layout, comparison, drill-in, or interaction — specs, plans, PR reviews, design systems, prototypes, diagrams, decks, research explainers, reports, and custom editors. Scaffolds from 20 forked reference templates at `.aikit/templates/html-artifacts/` and fills them with project context. Maintains a gallery at `.aikit/artifacts/index.html`.
-version: "2.2.0"
+version: "2.3.0"
 source: haac-aikit
 license: MIT
 inspired-by: https://thariqs.github.io/html-effectiveness (templates forked with permission, 2026-05-12)
@@ -36,6 +36,20 @@ When conditions match but the user didn't ask for HTML, say one sentence and wai
 - **AUTO-GENERATED pill**: top-right badge on agent-produced artifacts so readers know the origin
 - **Prompt callout**: exploration / planning artifacts preserve the originating user request in a cream-tinted box at top
 - **Density-adaptive rendering**: when the artifact's total visible items (milestones + risks + cards + rows across all sections) is ≤ 6, drop decorations designed for dense pages — section numbers, tag chips, colored dot indicators, multi-column summary cards. These visuals were tuned for ~12-item artifacts; on sparse content they read as noise instead of hierarchy. The point of structure is signal; if there's little content, decoration buries it.
+- **Decision callout first**: any artifact that asks the user to decide something starts with a "Decision needed" block at the top — the call-to-action in one sentence, options in chips (`A —` / `B —`), the recommendation marked. Don't make decision-makers scroll to find what to approve.
+
+## Accessibility (a11y)
+
+Decision documents get read on phones, with screen readers, in high-contrast mode, by keyboard-only users. The bar is the same as the voice rule — make the artifact work for the actual reading environment, not just a desktop browser.
+
+**Hard rules:**
+
+1. **Landmark roles** — wrap top-level structure in `<main>`, `<nav>`, `<article>`, `<aside>`. Screen readers use these to navigate; readers without them have to crawl the document linearly.
+2. **Alt text on every diagram and icon** — inline `<svg>` gets `<title>` + `aria-labelledby` or `aria-label`; `<img>` gets `alt="..."`. Purely decorative icons get `aria-hidden="true"` so they don't announce as noise.
+3. **Heading hierarchy never skips levels** — `<h1>` → `<h2>` → `<h3>`. Exactly one `<h1>` per artifact (the title).
+4. **Native form controls only** — `<input>` paired with `<label for="...">`, `<button>` for buttons, native `<select>`. No div-button hacks.
+5. **Color contrast ≥ 4.5:1 for body text, ≥ 3:1 for large text** — design tokens already meet WCAG AA; don't override per-artifact in ways that break the ratio.
+6. **Keyboard focus visible** — never `outline: none` without a `:focus-visible` replacement that meets contrast.
 
 ## Voice & plain-language rule
 
@@ -64,7 +78,7 @@ The technical details (`tRPC`, `optimistic insert`, `fan-out`) still appear in t
 **Templates**: `01-exploration-code-approaches.html`, `02-exploration-visual-designs.html`, `16-implementation-plan.html`
 **Use for**: comparing N approaches, exploring visual directions, handing off a plan
 **Concrete techniques**: numbered approach badges (`01`/`02`/`03`) in oat chips · equal-width code blocks for visual symmetry · pro/con tables with colored dot bullets (olive=pro, clay=con) · chip metrics footer (bundle, testability, reuse, SSR safety) · recommendation callout with left clay border + serif 22px · light/dark toggle via single `:root` swap · numbered milestone rows with date columns on left · phase cards with package chips · risks table (RISK / SEV / MITIGATION) · "Decide with · person · before slice N" footer on open questions
-**Must-haves**: preserve the originating prompt as a top callout; numbered section dots if > 4 sections
+**Must-haves**: preserve the originating prompt as a top callout; numbered section dots if > 4 sections; **Decision needed block at the very top** — a clay-bordered card stating the call-to-action, the options considered (chips: `A —` / `B —`), and which one is recommended. Buried decisions are the failure mode this prevents.
 
 ### 2. Code Review & Understanding
 **Templates**: `03-code-review-pr.html`, `17-pr-writeup.html`, `04-code-understanding.html`
@@ -128,6 +142,8 @@ The technical details (`tRPC`, `optimistic insert`, `fan-out`) still appear in t
 - Missing AUTO-GENERATED badge on agent-produced artifacts — readers deserve to know
 - Missing provenance footer — "where did these numbers come from?" should always be answerable
 - **Jargon-heavy main prose** — using `tRPC`, `fan-out`, `idempotent`, `IntersectionObserver` in the reading path makes the artifact unreadable for non-specialists. Plain-language verb + concrete object in prose; technical terms in tag chips and code blocks.
+- **Decision buried below the fold** — artifact asks the user to approve, choose, or sign off but the call-to-action lives in Milestones or Risks, not at the top. Decision-makers shouldn't have to scroll to find what they're approving.
+- **Missing alt text / aria-label on SVG and `<img>`** — diagrams and charts become invisible to screen readers, low-vision users, and search / indexing. Every visual element gets a text equivalent.
 
 ## Template scaffolding
 
