@@ -383,7 +383,7 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <main class="page">
 
     <header class="page-head">
       <div class="eyebrow">Implementation plan · Birchline web client</div>
@@ -462,7 +462,8 @@
       <p class="sec-intro">Optimistic write path on the left, fan-out on the right. The read cursor update is fire-and-forget — we never block the thread render on it.</p>
 
       <div class="diagram">
-        <svg viewBox="0 0 860 340" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 860 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="svg-dataflow-title">
+          <title id="svg-dataflow-title">Data flow diagram for comment threads showing optimistic write from CommentComposer through tRPC to the database and realtime fan-out to subscribers</title>
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="#87867F"/>
@@ -697,6 +698,6 @@
       </div>
     </section>
 
-  </div>
+  </main>
 </body>
 </html>

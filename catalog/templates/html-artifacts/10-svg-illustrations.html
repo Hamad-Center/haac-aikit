@@ -186,7 +186,7 @@
 </style>
 </head>
 <body>
-<div class="sheet">
+<main class="sheet">
 
   <header>
     <h1>Background jobs — header illustrations</h1>
@@ -203,7 +203,8 @@
        ============================================================ -->
   <figure>
     <div class="canvas">
-      <svg id="ill-queue" xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+      <svg id="ill-queue" xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320" role="img" aria-labelledby="svg-queue-title">
+        <title id="svg-queue-title">Background job queue illustration showing five pending jobs and a worker pulling the next job for processing</title>
         <defs>
           <style>
             .m { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; }
@@ -265,7 +266,8 @@
        ============================================================ -->
   <figure>
     <div class="canvas">
-      <svg id="ill-retry" xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+      <svg id="ill-retry" xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320" role="img" aria-labelledby="svg-retry-title">
+        <title id="svg-retry-title">Retry with backoff timeline showing four attempts on a job, with exponential delays of one, two, and four seconds before the fourth succeeds</title>
         <defs>
           <style>
             .m { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; }
@@ -332,7 +334,8 @@
        ============================================================ -->
   <figure>
     <div class="canvas">
-      <svg id="ill-fanout" xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320">
+      <svg id="ill-fanout" xmlns="http://www.w3.org/2000/svg" width="720" height="320" viewBox="0 0 720 320" role="img" aria-labelledby="svg-fanout-title">
+        <title id="svg-fanout-title">Fan-out diagram showing an enqueue batch dispatching to multiple parallel worker lanes for concurrent job processing</title>
         <defs>
           <style>
             .m { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; }
@@ -471,7 +474,7 @@
     </ul>
   </section>
 
-</div>
+</main>
 
 <script>
   document.querySelectorAll('.dl').forEach(function (btn) {

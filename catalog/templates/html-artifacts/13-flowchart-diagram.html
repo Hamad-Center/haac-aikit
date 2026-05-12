@@ -158,7 +158,7 @@
 </style>
 </head>
 <body>
-<div class="sheet">
+<main class="sheet">
 
   <header>
     <div class="eyebrow">Illustrations &amp; Diagrams · Flowchart</div>
@@ -173,7 +173,8 @@
 
     <div>
       <div class="canvas">
-        <svg class="flow" viewBox="0 0 620 920">
+        <svg class="flow" viewBox="0 0 620 920" role="img" aria-labelledby="svg-flow-title">
+          <title id="svg-flow-title">Deploy pipeline flowchart for git push main showing CI steps, test gates, image build, deploy stages, and rollback path</title>
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="#87867F"/>
@@ -293,7 +294,7 @@
     </aside>
 
   </div>
-</div>
+</main>
 
 <script>
 const DETAIL = {
