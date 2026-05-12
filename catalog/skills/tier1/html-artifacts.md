@@ -1,7 +1,7 @@
 ---
 name: html-artifacts
 description: Use when producing structured output that benefits from rich layout, comparison, drill-in, or interaction — specs, plans, PR reviews, design systems, prototypes, diagrams, decks, research explainers, reports, and custom editors. Scaffolds from 20 forked reference templates at `.aikit/templates/html-artifacts/` and fills them with project context. Maintains a gallery at `.aikit/artifacts/index.html`.
-version: "2.0.0"
+version: "2.1.0"
 source: haac-aikit
 license: MIT
 inspired-by: https://thariqs.github.io/html-effectiveness (templates forked with permission, 2026-05-12)
@@ -35,6 +35,7 @@ When conditions match but the user didn't ask for HTML, say one sentence and wai
 - **Provenance footer**: every generated artifact ends with `Sources: … — generated <ISO timestamp>`
 - **AUTO-GENERATED pill**: top-right badge on agent-produced artifacts so readers know the origin
 - **Prompt callout**: exploration / planning artifacts preserve the originating user request in a cream-tinted box at top
+- **Density-adaptive rendering**: when the artifact's total visible items (milestones + risks + cards + rows across all sections) is ≤ 6, drop decorations designed for dense pages — section numbers, tag chips, colored dot indicators, multi-column summary cards. These visuals were tuned for ~12-item artifacts; on sparse content they read as noise instead of hierarchy. The point of structure is signal; if there's little content, decoration buries it.
 
 ## Pattern playbook (9 patterns, aligned with the source)
 
@@ -117,15 +118,25 @@ When conditions match but the user didn't ask for HTML, say one sentence and wai
 1. **Read the manifest first**: `Read .aikit/templates/html-artifacts/MANIFEST.json`. Find the entry whose `category` matches the pattern from the playbook above and whose `slug` best matches the user's intent.
 2. **Read the matching template**: `Read .aikit/templates/html-artifacts/<file>.html` (the `file` field from the manifest entry). This is non-optional. If the file is missing, ask the user to run `aikit sync`; do not proceed without it.
 3. **Gather real project context**: run the appropriate commands — `git diff main...HEAD`, `git log --since=...`, read files mentioned in the prompt, etc. Replace the template's placeholder content with these real facts.
-4. **Preserve structure verbatim** when writing the filled artifact:
+4. **Prune irrelevant sections before filling**. Scan the template's `<section>` blocks; for any not required by the user's intent, OMIT them from the filled artifact entirely (don't render them with empty placeholders). Aim for the minimum sections that carry signal — keeping all sections "just in case" forces the reader to skim each one to decide whether it's relevant. Section-keep guide:
+
+   | Templates | Always include | Optional (only if relevant) |
+   | --- | --- | --- |
+   | `01`, `02`, `16` (Exploration & Planning) | Milestones / Approaches + Risks | Data flow §02 (only if client↔server movement) · Mockups §03 (only if UI work) · Key code §04 (only if specific patterns to highlight) |
+   | `03`, `17`, `04` (Code Review) | PR header · Per-file details · Comments | Risk map (only if multiple severities) · Module-map SVG (only for arch reviews) |
+   | `11`, `12` (Reports) | Metric band + main table | Velocity chart (only if time series) · Incident timeline (only for incidents) |
+   | `18`, `19`, `20` (Editors) | Real columns + export button | Dependency warnings (only if dependencies) |
+   | All others | Core content sections of the pattern | Any section where placeholders would carry no signal |
+
+5. **Preserve structure verbatim** when writing the filled artifact:
    - All `:root` CSS variables (`--clay`, `--slate`, `--ivory`, `--oat`, `--olive`, `--gray-*`)
    - All class names, layout grids, and microinteraction conventions
    - All cross-cutting techniques (sticky positioning, `scroll-margin-top`, `<details>` collapsibles, native form controls)
    - The pattern's visual language (severity colors, badge styles, dot indicators, monospace meta text)
-5. **Add required `<head>` elements**: `<title>`, `<meta name="description">`, and `<meta name="aikit-pattern" content="...">` with one of: `Exploration`, `Code Review`, `Design`, `Prototype`, `Illustrations`, `Deck`, `Research`, `Report`, `Editor`.
-6. **Add AUTO-GENERATED pill** top-right and **provenance footer** (`Sources: ... — generated <ISO timestamp>`).
-7. **Save** to `.aikit/artifacts/NN-<slug>.html` (increment `NN` from existing files).
-8. **Regenerate gallery index** per the protocol below.
+6. **Add required `<head>` elements**: `<title>`, `<meta name="description">`, and `<meta name="aikit-pattern" content="...">` with one of: `Exploration`, `Code Review`, `Design`, `Prototype`, `Illustrations`, `Deck`, `Research`, `Report`, `Editor`.
+7. **Add AUTO-GENERATED pill** top-right and **provenance footer** (`Sources: ... — generated <ISO timestamp>`).
+8. **Save** to `.aikit/artifacts/NN-<slug>.html` (increment `NN` from existing files).
+9. **Regenerate gallery index** per the protocol below.
 
 ### User-driven scaffolding (alternative)
 
