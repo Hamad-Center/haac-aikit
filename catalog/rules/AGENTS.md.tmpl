@@ -47,6 +47,16 @@ TODO: How to run a single test; framework quirks.
 
 TODO: Project-specific security notes.
 
+## Skills and templates
+<!-- This section is shipped by haac-aikit so every tool (Claude, Cursor, Aider,
+     Copilot, Windsurf, Gemini, Codex) sees the same skill-discovery rules.
+     The .claude/ path name is historical; the content there is tool-agnostic. -->
+
+- <!-- id: skills.read-on-match --> Skill instructions live at `.claude/skills/*.md`. When a task matches a skill's `## When to use` rules, **read that skill before producing output** — it ships pattern-specific techniques and protocols that this file does not repeat.
+- <!-- id: skills.html-artifacts --> For HTML artifact production (specs, plans, PR reviews, design systems, prototypes, diagrams, decks, research explainers, reports, custom editing interfaces): the `html-artifacts` skill at `.claude/skills/html-artifacts.md` is **mandatory**. Forked reference templates live at `.aikit/templates/html-artifacts/` with a machine-readable `MANIFEST.json`. **Read the matching template first** before writing; do not invent HTML structure from scratch.
+- <!-- id: skills.scaffold-cli --> User-driven scaffolding: `aikit scaffold html <slug>` drops a starter template into the current directory. Run `aikit scaffold html --list` to see all 20.
+- <!-- id: artifacts.output-path --> Filled artifacts go to `.aikit/artifacts/NN-<slug>.html` (incrementing `NN`). Regenerate `.aikit/artifacts/index.html` after each write; the gallery is auto-maintained.
+
 ## Gotchas
 <!-- High-signal section. Add things the agent repeatedly gets wrong.
      Tip: prefix the most load-bearing rules with `IMPORTANT:` or `YOU MUST` —

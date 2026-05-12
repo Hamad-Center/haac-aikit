@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 import mri from "mri";
 import { isInteractive } from "./detect/isCI.js";
+import { checkAndNotify } from "./notify.js";
 import type { CliArgs } from "./types.js";
 
-const VERSION = "0.7.1";
+// Version is substituted at build time by tsup's `define` from package.json,
+// so the bundle and the manifest can't drift. Falls back to a literal for ts-node
+// or dev contexts where the define isn't applied.
+const VERSION = process.env.HAAC_AIKIT_VERSION ?? "dev";
 
 const HELP = `
 haac-aikit — the batteries-included AI-agentic-coding kit
@@ -23,6 +27,10 @@ COMMANDS
   doctor --rules    Rule observability report — which rules fire, are followed, are dead
   report            Markdown / JSON rule-adherence summary (for PR comments / CI)
   learn             Mine recent PR review comments for repeated corrections; propose rules
+  scaffold html [<slug>]
+                    Drop an HTML artifact template into the current directory.
+                    Run \`aikit scaffold html --list\` to see all 20 templates.
+  whatsnew          Show release notes for the current version (--all for full history)
 
 FLAGS
   --yes, -y           Accept all defaults
@@ -37,14 +45,19 @@ FLAGS
   --format=<fmt>      (with report / doctor --rules)  markdown | json
   --since=<date>      (with report)  Restrict events to after this ISO date
   --limit=<n>         (with learn)   How many merged PRs to scan (default 30)
+  --list              (with scaffold) Print all available templates and exit
+  --name=<filename>   (with scaffold) Output filename (defaults to template's own name)
+  --all               (with whatsnew) Show release notes for all versions
+  --no-update-check   Skip the once-per-day npm registry check for this invocation
+                      (also honored: AIKIT_NO_UPDATE_CHECK=1 env var)
   --help, -h          Show this help
   --version, -v       Show version
 `;
 
 async function main(): Promise<void> {
   const argv = mri<CliArgs>(process.argv.slice(2), {
-    boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules"],
-    string: ["config", "tools", "preset", "scope", "format", "since", "limit"],
+    boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules", "list", "all", "no-update-check"],
+    string: ["config", "tools", "preset", "scope", "format", "since", "limit", "name"],
     alias: { y: "yes", h: "help", v: "version", scope: "preset" },
     default: {
       yes: false,
@@ -55,6 +68,9 @@ async function main(): Promise<void> {
       help: false,
       version: false,
       rules: false,
+      list: false,
+      all: false,
+      "no-update-check": false,
     },
   });
 
@@ -67,6 +83,10 @@ async function main(): Promise<void> {
     process.stdout.write(HELP + "\n");
     return;
   }
+
+  // Update check runs before the command dispatch. The function never throws
+  // past its own try/catch, so a network failure can't break the CLI.
+  await checkAndNotify(argv, VERSION);
 
   const [command = "init"] = argv._;
 
@@ -118,6 +138,16 @@ async function main(): Promise<void> {
     case "learn": {
       const { runLearn } = await import("./commands/learn.js");
       await runLearn(argv);
+      break;
+    }
+    case "scaffold": {
+      const { runScaffold } = await import("./commands/scaffold.js");
+      await runScaffold(argv);
+      break;
+    }
+    case "whatsnew": {
+      const { runWhatsNew } = await import("./commands/whatsnew.js");
+      await runWhatsNew(argv);
       break;
     }
     default:

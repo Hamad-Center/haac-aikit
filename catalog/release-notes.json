@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "releases": [
+    {
+      "version": "0.9.0",
+      "date": "2026-05-12",
+      "headline": "HTML artifact scaffolding + 20 forked templates + cross-tool skill discovery",
+      "highlights": [
+        "NEW `aikit scaffold html <slug>` — drops one of 20 HTML reference templates into the current dir",
+        "NEW 20 forked templates at `.aikit/templates/html-artifacts/` (with permission from ThariqS)",
+        "NEW `aikit whatsnew` command for release notes",
+        "NEW Update-available banner (runs once per 24h; opt out with AIKIT_NO_UPDATE_CHECK=1)",
+        "CHANGED `html-artifacts` skill v1.1.0 → v2.0.0: 9 patterns, mandatory template-read protocol",
+        "CHANGED `aikit sync` now also syncs templates; `aikit list` shows them as a category",
+        "CHANGED Skill discovery propagates to all 6 non-Claude tools via AGENTS.md.tmpl",
+        "FIXED gitignore — only `.aikit/artifacts/` ignored; templates are now committable"
+      ],
+      "breaking": [
+        "`html-artifacts.md` skill is a complete rewrite — if you customized it, `aikit sync` will flag a conflict"
+      ],
+      "migration": [
+        "Run `aikit sync` to pull the 20 new templates into `.aikit/templates/html-artifacts/`",
+        "Templates will now appear in `git status` after sync (intentional — they're reference material)"
+      ],
+      "links": {
+        "changelog": "https://github.com/Hamad-Center/haac-aikit/blob/main/CHANGELOG.md#090--2026-05-12",
+        "release": "https://github.com/Hamad-Center/haac-aikit/releases/tag/v0.9.0"
+      }
+    }
+  ]
+}

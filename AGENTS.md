@@ -21,7 +21,7 @@ This repo dogfoods its own conventions: `AGENTS.md` is the single source of trut
 Run a single test: `npx vitest run test/path.test.ts -t "name"`.
 
 ## Project layout
-- `src/cli.ts`           — entry point; routes 9 commands (`init`, `sync`, `update`, `diff`, `add`, `list`, `doctor`, `report`, `learn`)
+- `src/cli.ts`           — entry point; routes 10 commands (`init`, `sync`, `update`, `diff`, `add`, `list`, `doctor`, `report`, `learn`, `scaffold`)
 - `src/commands/`        — one file per command; loaded via dynamic `import()`
 - `src/render/`          — BEGIN/END marker engine (4 dialects: markdown, JSON, YAML, shell)
 - `src/render/dialects/` — Phase-2 per-tool translators (Cursor MDC today; Claude/Aider/Copilot/Gemini queued)
@@ -35,6 +35,8 @@ Run a single test: `npx vitest run test/path.test.ts -t "name"`.
 - `catalog/docs/`        — `claude-md-reference.md` shipped to downstream users at scope ≥ standard
 - `catalog/agents/tier1/`, `catalog/agents/tier2/` — tiered agent roster (mirrors `catalog/skills/`)
 - `catalog/{skills,commands,ci,mcp,settings,devcontainer,husky,plugin}/` — other shipped artefacts
+- `catalog/templates/html-artifacts/` — 20 forked HTML reference templates + `MANIFEST.json`, scaffolded via `aikit scaffold html`
+- `src/templates/`        — `TEMPLATES_ROOT` walk-up resolver (mirrors `src/catalog/`) and manifest loader
 - `test/`                — vitest specs (co-located by feature)
 - `docs/`                — project-internal docs: observability/dialects/learn deep dives, claude-md-reference
 - `scripts/`             — repo tooling (`catalog-check.js`, etc.)

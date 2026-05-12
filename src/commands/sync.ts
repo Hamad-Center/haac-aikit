@@ -81,6 +81,13 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
     results.push(...syncSkills("tier2", opts));
   }
 
+  // Templates — currently only html-artifacts. Synced to .aikit/templates/
+  // (not .claude/) because templates are tool-agnostic — any agent or human
+  // reading them can produce HTML, no per-tool translation needed.
+  if (config.scope !== "minimal") {
+    results.push(...syncTemplates(opts));
+  }
+
   // Hooks
   if (config.integrations.hooks) {
     results.push(...syncHooks(opts));
@@ -268,6 +275,34 @@ function syncSkills(tier: "tier1" | "tier2", opts: WriteOpts): WriteResult[] {
 
   for (const file of files) {
     results.push(copyAction(join(srcDir, file), join(destDir, file), opts));
+  }
+
+  return results;
+}
+
+function syncTemplates(opts: WriteOpts): WriteResult[] {
+  const srcRoot = join(CATALOG_ROOT, "templates");
+  const results: WriteResult[] = [];
+
+  if (!existsSync(srcRoot)) return results;
+
+  // Each child of catalog/templates/ becomes a synced subdirectory under
+  // .aikit/templates/. Today that's just html-artifacts/, but the shape
+  // anticipates future packs (e.g. markdown templates, slide templates).
+  for (const pack of readdirSync(srcRoot)) {
+    const srcDir = join(srcRoot, pack);
+    const destDir = join(".aikit/templates", pack);
+    if (!existsSync(srcDir)) continue;
+
+    if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
+
+    // Templates ship pristine — include .html, .json (manifest), .md (README).
+    const files = readdirSync(srcDir).filter((f) =>
+      f.endsWith(".html") || f.endsWith(".json") || f.endsWith(".md")
+    );
+    for (const file of files) {
+      results.push(copyAction(join(srcDir, file), join(destDir, file), opts));
+    }
   }
 
   return results;

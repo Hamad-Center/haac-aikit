@@ -18,6 +18,7 @@ export async function runList(_argv: CliArgs): Promise<void> {
     { label: "Slash commands", items: listCategory("commands", ".claude/commands") },
     { label: "Hooks", items: listCategory("hooks", ".claude/hooks", [".sh"]) },
     { label: "Path-scoped rules", items: listClaudeRules() },
+    { label: "HTML artifact templates", items: listHtmlArtifactTemplates() },
   ];
 
   let total = 0;
@@ -79,6 +80,25 @@ function listClaudeRules(): CatalogItem[] {
   return readdirSync(catalogDir)
     .filter((f) => f.endsWith(".md"))
     .map((f) => ({ name: stripExtension(f, [".md"]), installed: installedFiles.has(f) }));
+}
+
+function listHtmlArtifactTemplates(): CatalogItem[] {
+  const catalogDir = join(CATALOG_ROOT, "templates", "html-artifacts");
+  if (!existsSync(catalogDir)) return [];
+
+  const installedDir = ".aikit/templates/html-artifacts";
+  const installedFiles = new Set(
+    existsSync(installedDir)
+      ? readdirSync(installedDir).filter((f) => f.endsWith(".html") && f !== "index.html")
+      : []
+  );
+
+  // Surface only the numbered template files (skip index.html which is the
+  // gallery landing page, not a scaffoldable template).
+  return readdirSync(catalogDir)
+    .filter((f) => f.endsWith(".html") && f !== "index.html")
+    .sort()
+    .map((f) => ({ name: stripExtension(f, [".html"]), installed: installedFiles.has(f) }));
 }
 
 function stripExtension(filename: string, extensions: string[]): string {

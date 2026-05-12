@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+The CLI surfaces these notes via `aikit whatsnew` (reads `catalog/release-notes.json`) and, when a newer version is on npm, prints a one-line banner once per 24h.
+
+## [0.9.0] - 2026-05-12
+
+### Added
+- **`aikit scaffold html [<slug>]`** — new top-level command. Drops one of 20 forked HTML reference templates into the current directory. Supports interactive picker, `--list`, `--name`, `--dry-run`, `--force`. Numeric (`03`) and slug (`pr-review`) identifiers both resolve.
+- **`catalog/templates/html-artifacts/`** — vendored 20 HTML templates forked with permission from [github.com/ThariqS/html-effectiveness](https://github.com/ThariqS/html-effectiveness), plus an `index.html` gallery, `MANIFEST.json`, and `README.md` with attribution. Synced to `.aikit/templates/html-artifacts/` on every `aikit sync`.
+- **`aikit whatsnew`** — explicit command for release notes; reads `catalog/release-notes.json`. `--all` shows full history.
+- **Update-available banner** — runs once per 24h, checks the npm registry, prints a one-line notice if a newer version is available. Skipped in CI, headless, `--help`/`--version`, and when `AIKIT_NO_UPDATE_CHECK=1` is set.
+- **`--no-update-check` flag** — opt out of the update banner for the current invocation.
+
+### Changed
+- **`html-artifacts` skill — complete v1.1.0 → v2.0.0 rewrite.** 9 patterns aligned with the source's official categories (including the previously misnamed `Custom Editing Interfaces`), new cross-cutting techniques section (15 patterns), new failure-modes section, mandatory template-read protocol with `YOU MUST NOT invent HTML structure from scratch`. 110 → 155 lines.
+- **`/html` slash command** — rewritten to invoke the new scaffolding protocol; references the 20 templates and the MANIFEST.
+- **`AGENTS.md.tmpl`** — new `## Skills and templates` section inside the marker region propagates skill discovery to all six non-Claude tools via the existing render pipeline.
+- **`aikit list`** — gained a `HTML artifact templates` category; surfaces all 20 templates.
+- **`aikit sync`** — extended with a `syncTemplates()` pass that copies `catalog/templates/` into `.aikit/templates/`.
+- **`.gitignore` policy** — now ignores only `.aikit/artifacts/` (generated content), not the whole `.aikit/` directory. Templates and other reference content in `.aikit/` are now committable.
+- **`scripts/catalog-check.js`** — validates `MANIFEST.json` ↔ files round-trip.
+
+### Migration
+- After upgrading, run `aikit sync` to pull the new templates into `.aikit/templates/html-artifacts/`.
+- If you customized the `html-artifacts` skill in your project, the catalog version has changed substantially — `aikit sync` will flag a conflict; choose `replace` for the new content or `keep` to preserve yours (and accept that templates won't be referenced).
+- Templates are now tracked by git in your project — they appear in `git status` after sync.
+
 ## [0.7.1] - 2026-04-30
 
 ### Fixed

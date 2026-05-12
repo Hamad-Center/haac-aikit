@@ -1,9 +1,15 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
+// We list specific subpaths inside .aikit/ rather than ignoring the whole
+// directory. Generated content (.aikit/artifacts/) is excluded; reference
+// content (.aikit/templates/, the future .aikit/cache/ if any) is tracked
+// so a fresh clone has them without re-running `aikit sync`.
+// Git negation cannot re-include children of a wholly-excluded directory, so
+// the pattern must target the children directly, not use `!` negations.
 const ENTRIES = [
   ".claude/settings.local.json",
   ".claude/backups/",
-  ".aikit/",
+  ".aikit/artifacts/",
   ".env.local",
   ".env*.local",
 ];

@@ -98,4 +98,35 @@ export interface CliArgs {
   format?: "markdown" | "json";
   since?: string;
   limit?: number | string;
+  list?: boolean;
+  name?: string;
+  all?: boolean;
+  "no-update-check"?: boolean;
+}
+
+export interface TemplateCategory {
+  slug: string;
+  title: string;
+  anchor: string;
+}
+
+export interface TemplateEntry {
+  number: string;
+  slug: string;
+  category: string;
+  title: string;
+  description: string;
+  file: string;
+}
+
+export interface TemplateManifest {
+  version: 1;
+  source: {
+    upstream: string;
+    homepage: string;
+    permission: string;
+    fetchedAt: string;
+  };
+  categories: TemplateCategory[];
+  templates: TemplateEntry[];
 }
