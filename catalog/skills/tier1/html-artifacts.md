@@ -1,7 +1,7 @@
 ---
 name: html-artifacts
-description: Use when generating output that would benefit from rich formatting — specs, plans, reports, code review explainers, design prototypes, or custom editors. Teaches when to proactively offer HTML instead of markdown and how to structure each artifact type.
-version: "1.0.0"
+description: Use when generating output that would benefit from rich formatting — specs, plans, reports, code review explainers, prototypes, decks, design-system pages, visual explainers, or custom editors. Maintains a gallery index at .aikit/artifacts/index.html so artifacts compound into a navigable project archive. Inspired by Thariq Shihipar's "Unreasonable Effectiveness of HTML" (Anthropic, 2026).
+version: "1.1.0"
 source: haac-aikit
 license: MIT
 ---
@@ -19,7 +19,7 @@ When conditions above are met but the user didn't explicitly ask for HTML, say o
 
 Wait for a yes/no. If yes, proceed with HTML. If no, use markdown.
 
-## Five use-case patterns
+## Use-case patterns
 
 ### 1. Spec / Planning
 **Trigger:** Long spec, multiple options to compare  
@@ -46,6 +46,21 @@ Wait for a yes/no. If yes, proceed with HTML. If no, use markdown.
 **Structure:** Drag/sort or form UI, constraint warnings, "copy as JSON/prompt" export button  
 **Don't:** Let the editor be the only output — always export
 
+### 6. Visual Explainer
+**Trigger:** Explaining a concept, system, or workflow where a diagram beats prose  
+**Structure:** One hero inline `<svg>` with labelled regions, short text blocks anchored to those regions, "view source" toggle that reveals the underlying data  
+**Don't:** Use raster images or external icon CDNs — keep SVG inline so the artifact stays self-contained and editable
+
+### 7. Deck
+**Trigger:** Slide presentation, talk preview, pitch, "walk me through this"  
+**Structure:** One slide per viewport (`100vh`), large body type (≥32px), arrow-key navigation, single idea per slide, speaker notes hidden behind a key press  
+**Don't:** Generate scrolling content — if the user would scroll, it's a Report, not a Deck
+
+### 8. Design System
+**Trigger:** Building or documenting a design system, component library reference, token palette  
+**Structure:** Live component samples beside their source HTML/CSS, swatches for color/spacing/type tokens, copy-on-click for each token value  
+**Don't:** Use screenshots of components — the components on the page must be the real, live HTML
+
 ## Built-in design system
 
 Inject this CSS block into every artifact. If the project has `docs/aikit-html-design-system.html`, read it first and use those variable values instead.
@@ -71,10 +86,24 @@ Inject this CSS block into every artifact. If the project has `docs/aikit-html-d
 Pre-built components available: `.card`, `.badge` (`.badge-ok/warn/error/info`), `.tabs` + `.tab` + `.tab-panel`, `.code-block`, `.diff-block` + `.diff-line` + `.diff-line-add/del/ctx`.
 
 ## Output rules
-- Save to `.aikit/artifacts/<slug>-<timestamp>.html` (this path is gitignored)
-- After saving, print the path and suggest: `open <path>` (macOS) or `xdg-open <path>` (Linux)
-- Pure HTML/CSS/JS only — no external CDN dependencies, no build step
-- Mobile-responsive: use `max-width` + `padding` on body, `<meta name="viewport">`
+- Save to `.aikit/artifacts/NN-<slug>.html` where `NN` is a zero-padded sequence (`07-auth-spec.html`). This path is gitignored.
+- Determine `NN` by listing existing files in `.aikit/artifacts/` (ignore `index.html`) and incrementing the highest number; start at `01`.
+- Every artifact MUST include `<meta name="aikit-pattern" content="...">` in `<head>` with one of: `Spec`, `Code Review`, `Report`, `Prototype`, `Editor`, `Visual Explainer`, `Deck`, `Design System`. The index uses this to group entries.
+- Every artifact MUST include `<title>` and `<meta name="description">` — the index renders these.
+- Pure HTML/CSS/JS only — no external CDN dependencies, no build step.
+- Mobile-responsive: use `max-width` + `padding` on body, `<meta name="viewport">`.
+- After saving, also rewrite `.aikit/artifacts/index.html` (see below), then print both paths and suggest: `open .aikit/artifacts/index.html` (macOS) or `xdg-open` (Linux).
+
+## Index page (gallery)
+The index is auto-maintained. After every artifact write, regenerate `.aikit/artifacts/index.html` from scratch — do not try to surgically edit it:
+
+1. List `.aikit/artifacts/*.html` excluding `index.html` itself
+2. For each file, read `<title>`, `<meta name="description">`, and `<meta name="aikit-pattern">`
+3. Group entries by pattern (Spec, Code Review, Report, Prototype, Editor, Visual Explainer, Deck, Design System)
+4. Render each group as a section with cards: filename badge, title, one-line description, link to the file
+5. Reuse the built-in design system CSS so the gallery matches the artifacts
+
+Drop empty groups. Sort entries within a group by filename (which is by `NN`). The index itself uses `<meta name="aikit-pattern" content="Index">` so future tooling can recognize it but it is excluded from its own listing.
 
 ## Markdown-first rule
 Existing brainstorming and planning skills stay markdown-first. Only switch to HTML when the user accepts the proactive offer or explicitly requests it (e.g. via `/html`). This preserves cross-tool compatibility.
