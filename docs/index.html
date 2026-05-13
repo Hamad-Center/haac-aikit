@@ -197,6 +197,86 @@
     .flow .arrow { color: var(--gray-500); padding-right: 6px; }
     .flow .step { color: var(--slate); }
 
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 0 0 12px;
+    }
+
+    .compare .col {
+      background: var(--white);
+      border: 1px solid var(--gray-300);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+
+    .compare .col.before { border-top: 3px solid var(--clay); }
+    .compare .col.after { border-top: 3px solid var(--olive); }
+
+    .compare .col h3 {
+      font-family: var(--mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 0 0 12px;
+      color: var(--gray-700);
+    }
+
+    .compare .col.before h3 { color: var(--clay); }
+    .compare .col.after h3 { color: var(--olive); }
+
+    .compare .col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .compare .col li {
+      padding: 6px 0 6px 20px;
+      position: relative;
+      color: var(--gray-700);
+    }
+
+    .compare .col.before li::before {
+      content: "✗";
+      position: absolute;
+      left: 0;
+      color: var(--clay);
+      font-weight: 600;
+    }
+
+    .compare .col.after li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--olive);
+      font-weight: 600;
+    }
+
+    .attribution {
+      background: var(--gray-150);
+      border-left: 3px solid var(--clay);
+      padding: 18px 22px;
+      border-radius: 6px;
+      margin: 0 0 24px;
+      font-size: 16px;
+    }
+
+    .attribution .source {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 8px;
+      display: block;
+    }
+
+    @media (max-width: 600px) {
+      .compare { grid-template-columns: 1fr; }
+    }
+
     .footer {
       margin-top: 64px;
       padding-top: 24px;
@@ -236,9 +316,9 @@
 </head>
 <body>
   <main class="page">
-    <div class="eyebrow">v0.11.0 · npm</div>
-    <h1>Two skills, not twenty templates</h1>
-    <p class="tagline">A small kit for keeping a project documented as it changes, and for writing one clean tradeoff page when there's a decision to make. That's it. We tried the 20-template version. It was too much.</p>
+    <div class="eyebrow">v0.11 · npm · MIT</div>
+    <h1>Docs that update themselves.</h1>
+    <p class="tagline">Two new Claude Code skills that maintain your project's HTML documentation and decision log — every time the code changes. Cross-tool. Cheap on tokens.</p>
 
     <div class="install" role="region" aria-label="Install command">
       <span class="prompt" aria-hidden="true">$</span>
@@ -250,64 +330,83 @@
 
     <div class="install-meta" aria-hidden="true">
       <span class="pill">~157KB bundle</span>
-      <span class="pill">cross-tool (7 agents)</span>
-      <span class="pill">v0.11 breaking — see migration</span>
+      <span class="pill">7 AI tools</span>
+      <span class="pill">no build step</span>
     </div>
 
-    <section aria-labelledby="why-heading">
-      <h2 id="why-heading">Why we trimmed it down</h2>
-      <p>The previous release shipped 20 forked HTML templates — PR reviews, slide decks, design systems, prototype animations, feature-flag editors, prompt tuners. A beautiful catalog. After living with it in real projects, the honest verdict was: <strong>it was too much overengineering for the everyday cycle.</strong></p>
-      <p>Developers don't browse a 20-template menu when they're mid-task. A 205-line always-on skill is paid context on every single agent invocation, even when nobody's generating HTML. Most of the templates were never reached for in real life — they were a museum, not a workshop.</p>
-      <p>When we listed what people <em>actually</em> used HTML for, two patterns kept surfacing: <strong>living project documentation</strong> (for handover, onboarding, knowing what changed) and <strong>tradeoff pages</strong> (when there's a real decision to make). Everything else was a one-off that markdown could handle.</p>
-      <p>So <code>/html</code> got split into two focused skills, both shipping a single starter template each. <strong>This version covers 100% of the planning and project-docs work we kept reaching for</strong> — without the surface area we never used.</p>
-      <p style="margin-top:24px;color:var(--gray-500);font-size:15px;">Want the old 20 templates? They're not gone, just not the default. Run <code>git checkout v0.10.0 -- catalog/templates/html-artifacts/</code> in a clone of the repo and you have them back.</p>
+    <section aria-labelledby="pain-heading">
+      <h2 id="pain-heading">Your README went stale six months ago.</h2>
+      <p>Architecture docs drift. Decision rationale lives in lost Slack threads. New hires re-ask the original author "how does this work?" because the doc explaining it is from two refactors ago. Every project has this problem. Most projects give up.</p>
+      <div class="compare" role="region" aria-label="Before and after">
+        <div class="col before">
+          <h3>without</h3>
+          <ul>
+            <li>README untouched since launch</li>
+            <li>ARCHITECTURE.md drifted from real architecture</li>
+            <li>"Why did we pick X?" lost in Slack</li>
+            <li>Onboarding = re-asking the original author</li>
+          </ul>
+        </div>
+        <div class="col after">
+          <h3>with /docs and /decide</h3>
+          <ul>
+            <li>HTML docs that update with the code</li>
+            <li>Section-bounded edits — surgical, not whole-file</li>
+            <li>Permanent decision log under docs/decisions/</li>
+            <li>"Why did we pick X?" → searchable answer</li>
+          </ul>
+        </div>
+      </div>
     </section>
 
     <section aria-labelledby="get-heading">
-      <h2 id="get-heading">What lands</h2>
+      <h2 id="get-heading">The two skills</h2>
       <div class="cards">
         <article class="card">
-          <h3><code>/docs</code> &mdash; living project documentation</h3>
-          <p>Always-on, ~80-line skill. Maintains an HTML doc tree at <code>docs/</code>: one rolled-up <code>docs/index.html</code> plus per-area files (<code>architecture.html</code>, <code>auth.html</code>, whatever you need). Updates are section-bounded — the agent reads and edits one named block at a time, not the whole file. Cheap, surgical, idempotent.</p>
+          <h3><code>/docs</code> &mdash; living documentation</h3>
+          <p>Maintains an HTML doc tree at <code>docs/</code> — architecture, features, gotchas. The agent reads only the section it needs, proposes the edit, writes after you confirm. Everything outside the markers stays verbatim.</p>
         </article>
         <article class="card">
-          <h3><code>/decide</code> &mdash; one rich tradeoff page per call</h3>
-          <p>Opt-in (tier2), ~50-line skill. When you're about to make a non-trivial choice, generates a single rich HTML page comparing options: pros and cons as colored dots, side-by-side table, technical bit explained in plain language, recommendation marked with a star. Saves to <code>docs/decisions/YYYY-MM-DD-&lt;slug&gt;.html</code> as a permanent decision log.</p>
+          <h3><code>/decide</code> &mdash; tradeoff pages</h3>
+          <p>One rich HTML page per architectural choice. Options as cards, pros/cons as colored dots, recommendation marked with a star, technical bit rewritten for non-engineers. Each call appends to a permanent decision log.</p>
         </article>
         <article class="card">
           <h3>The marker engine that makes it cheap</h3>
-          <p>Documents are wrapped in <code>&lt;!-- BEGIN:haac-aikit:section:&lt;id&gt; --&gt;</code> blocks. Round-trip tested, idempotent, dialect-aware. Anything you write outside the markers — user-authored prose, hand-edited content — is preserved verbatim on every sync. This is what makes living docs viable without re-reading every file.</p>
+          <p>Sections wrapped in <code>&lt;!-- BEGIN:haac-aikit:section:&lt;id&gt; --&gt;</code> blocks. The agent loads one block per edit, not the whole file. Round-trip tested, idempotent, dialect-aware.</p>
         </article>
       </div>
     </section>
 
     <section aria-labelledby="use-heading">
-      <h2 id="use-heading">Using it</h2>
-      <p>Two slash commands. The agent proposes before writing — no silent edits.</p>
+      <h2 id="use-heading">In practice</h2>
       <div class="flow" role="region" aria-label="Example interaction">
         <div><span class="you">you:</span> /docs the new auth refresh flow</div>
         <div><span class="claude">claude:</span></div>
-        <div><span class="arrow">→</span><span class="step">reads only the <code>flow</code> section in <code>docs/auth.html</code></span></div>
-        <div><span class="arrow">→</span><span class="step">"I'll update the auth flow section to reflect the refresh tokens — okay?"</span></div>
-        <div><span class="arrow">→</span><span class="step">on yes, writes through the marker engine (everything outside markers preserved)</span></div>
-        <div><span class="arrow">→</span><span class="step">updates the auth summary in <code>docs/index.html</code> too</span></div>
-        <div style="margin-top:12px;"><span class="you">you:</span> /decide auth: session cookies vs JWT vs Clerk</div>
+        <div><span class="arrow">→</span><span class="step">reads the <code>flow</code> section in <code>docs/auth.html</code></span></div>
+        <div><span class="arrow">→</span><span class="step">"I'll update the auth flow to reflect refresh tokens — okay?"</span></div>
+        <div><span class="arrow">→</span><span class="step">on yes, writes the section + updates index.html summary</span></div>
+        <div style="margin-top:14px;"><span class="you">you:</span> /decide session cookies vs JWT vs Clerk</div>
         <div><span class="claude">claude:</span></div>
-        <div><span class="arrow">→</span><span class="step">confirms options + recommendation with you in chat</span></div>
-        <div><span class="arrow">→</span><span class="step">reads the tradeoff template, fills with real pros/cons</span></div>
+        <div><span class="arrow">→</span><span class="step">confirms options + your recommendation in chat</span></div>
         <div><span class="arrow">→</span><span class="step">writes <code>docs/decisions/2026-05-13-auth-strategy.html</code></span></div>
       </div>
-      <p style="margin-top:16px;">Both pages work on a phone, work with a screen reader, and can be opened in any browser — no build step, no CDNs.</p>
+    </section>
+
+    <section aria-labelledby="credit-heading">
+      <h2 id="credit-heading">Built on a real insight</h2>
+      <div class="attribution">
+        These skills exist because Thariq Shihipar wrote <a href="https://thariqs.github.io/html-effectiveness/">"The Unreasonable Effectiveness of HTML for Claude Code."</a> His point — that HTML output gives you scannable, interactive pages that feel like tools instead of chat transcripts — is what makes living docs and decision logs actually worth shipping. We took the insight and built the workflows that compound the longest.
+        <span class="source">— credit to <a href="https://x.com/trq212">@trq212</a> for the article and the design tokens we reuse.</span>
+      </div>
     </section>
 
     <section aria-labelledby="try-heading">
-      <h2 id="try-heading">Drop it into a project today</h2>
+      <h2 id="try-heading">Try it</h2>
       <div class="install" role="region" aria-label="Install command (repeated)">
         <span class="prompt" aria-hidden="true">$</span>
         <code>npx haac-aikit</code>
       </div>
-      <p>30-second wizard. Writes <code>.aikitrc.json</code> you can commit. The full kit also drops in cross-tool rules, safety hooks, agents, and CI templates — but <code>/docs</code> and <code>/decide</code> are the two skills you'll touch every week.</p>
-      <p style="color:var(--gray-500);font-size:15px;">Migrating from v0.10? Run <code>aikit sync</code> to pull the new templates, then delete the orphaned <code>.aikit/templates/html-artifacts/</code> and <code>docs/aikit-html-design-system.html</code> if you have no local edits worth keeping.</p>
+      <p>30-second wizard. Writes <code>.aikitrc.json</code> you can commit. The full kit also installs cross-tool rules, safety hooks, agents, and CI templates — but <code>/docs</code> and <code>/decide</code> are the two skills you'll reach for every week.</p>
     </section>
 
     <footer class="footer" role="contentinfo">
