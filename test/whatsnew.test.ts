@@ -34,9 +34,9 @@ describe("aikit whatsnew", () => {
   it("prints the latest release headline and highlights", async () => {
     await runWhatsNew(args());
     const output = stdout.join("");
-    expect(output).toContain("haac-aikit v0.9.0");
+    expect(output).toContain("haac-aikit v0.11.0");
     expect(output).toContain("Highlights");
-    expect(output).toContain("scaffold html");
+    expect(output).toContain("/docs");
   });
 
   it("includes the migration section when present", async () => {
@@ -56,19 +56,17 @@ describe("aikit whatsnew", () => {
   it("--all flag shows all releases (not just latest)", async () => {
     await runWhatsNew(args({ all: true }));
     const output = stdout.join("");
-    // We only have one release in release-notes.json so this is mostly a smoke
-    // test of the flag pathway. Future releases will add entries.
+    expect(output).toContain("haac-aikit v0.11.0");
     expect(output).toContain("haac-aikit v0.9.0");
     // The "showing latest only" hint should NOT appear when --all is set.
     expect(output).not.toContain("showing latest only");
   });
 
-  it("without --all, hints at --all when there are multiple releases", async () => {
+  it("without --all, hints at --all when multiple releases exist", async () => {
     await runWhatsNew(args());
     const output = stdout.join("");
-    // Only one release today, so the hint is suppressed. When a 2nd release is
-    // added the assertion should flip — this test then enforces the hint behavior.
-    // Currently we just assert the latest-only path doesn't crash.
-    expect(output.length).toBeGreaterThan(100);
+    // With 2+ releases in the catalog, the latest-only path should surface a
+    // hint pointing at --all for the full history.
+    expect(output).toContain("showing latest only");
   });
 });

@@ -69,75 +69,36 @@ function checkAgents() {
 }
 
 checkAgents();
-checkHtmlArtifactsTemplates();
+checkLivingDocsTemplates();
 console.log("catalog-check: all checks passed");
 
-function checkHtmlArtifactsTemplates() {
-  const root = join(repoRoot, "catalog", "templates", "html-artifacts");
-  if (!existsSync(root) || !statSync(root).isDirectory()) {
-    fail(`missing required directory ${root}`);
-  }
-
-  const manifestPath = join(root, "MANIFEST.json");
-  if (!existsSync(manifestPath)) {
-    fail(`missing ${manifestPath}`);
-  }
-
-  let manifest;
-  try {
-    manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  } catch (err) {
-    fail(`${manifestPath} is not valid JSON: ${err.message}`);
-  }
-
-  if (manifest.version !== 1) {
-    fail(`${manifestPath} version must be 1 (got ${manifest.version})`);
-  }
-  if (!Array.isArray(manifest.templates)) {
-    fail(`${manifestPath} missing 'templates' array`);
-  }
-  if (!Array.isArray(manifest.categories)) {
-    fail(`${manifestPath} missing 'categories' array`);
-  }
-
-  // Every manifest entry must point to an existing file.
-  const slugsSeen = new Set();
-  const numbersSeen = new Set();
-  const filesInManifest = new Set();
-  const categorySlugs = new Set(manifest.categories.map((c) => c.slug));
-
-  for (const entry of manifest.templates) {
-    for (const field of ["number", "slug", "category", "title", "description", "file"]) {
-      if (typeof entry[field] !== "string" || entry[field].length === 0) {
-        fail(`manifest entry ${JSON.stringify(entry)} missing required string '${field}'`);
-      }
+function checkLivingDocsTemplates() {
+  // Replaces the old html-artifacts manifest check. /docs and /decide each
+  // ship a single template; we just confirm the files exist.
+  const requiredTemplates = [
+    join(repoRoot, "catalog", "templates", "docs", "starter.html"),
+    join(repoRoot, "catalog", "templates", "decide", "template.html"),
+  ];
+  for (const path of requiredTemplates) {
+    if (!existsSync(path)) {
+      fail(`missing required template: ${path}`);
     }
-    if (slugsSeen.has(entry.slug)) fail(`duplicate slug in manifest: ${entry.slug}`);
-    if (numbersSeen.has(entry.number)) fail(`duplicate number in manifest: ${entry.number}`);
-    slugsSeen.add(entry.slug);
-    numbersSeen.add(entry.number);
-    if (!categorySlugs.has(entry.category)) {
-      fail(`manifest entry ${entry.slug} references unknown category '${entry.category}'`);
-    }
-    const filePath = join(root, entry.file);
-    if (!existsSync(filePath)) {
-      fail(`manifest entry ${entry.slug} points to missing file: ${entry.file}`);
-    }
-    filesInManifest.add(entry.file);
   }
 
-  // Every .html file (except index.html) must be referenced by the manifest.
-  const orphans = readdirSync(root)
-    .filter((f) => f.endsWith(".html") && f !== "index.html")
-    .filter((f) => !filesInManifest.has(f));
-  if (orphans.length > 0) {
-    fail(
-      `template files not listed in MANIFEST.json: ${orphans.join(", ")}. ` +
-      `Add manifest entries or remove the files.`
-    );
+  // Confirm /docs and /decide skill + command files exist alongside the templates.
+  const requiredSkillsAndCommands = [
+    join(repoRoot, "catalog", "skills", "tier1", "docs.md"),
+    join(repoRoot, "catalog", "skills", "tier2", "decide.md"),
+    join(repoRoot, "catalog", "commands", "docs.md"),
+    join(repoRoot, "catalog", "commands", "decide.md"),
+  ];
+  for (const path of requiredSkillsAndCommands) {
+    if (!existsSync(path)) {
+      fail(`missing required catalog file: ${path}`);
+    }
   }
 
   console.log(
-    `catalog-check: html-artifacts templates OK (${manifest.templates.length} entries, ${manifest.categories.length} categories)`
+    `catalog-check: living-docs templates OK (${requiredTemplates.length} templates, ${requiredSkillsAndCommands.length} catalog entries)`
   );
 }

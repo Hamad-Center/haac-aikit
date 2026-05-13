@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { checkAndNotify, compareVersions } from "../src/notify.js";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { checkAndNotify, compareVersions, _internal } from "../src/notify.js";
 import type { CliArgs } from "../src/types.js";
 
 function args(overrides: Partial<CliArgs> = {}): CliArgs {
@@ -29,6 +31,12 @@ beforeEach(() => {
   Object.defineProperty(process.stdout, "isTTY", { value: true, configurable: true });
   delete process.env.CI;
   delete process.env.AIKIT_NO_UPDATE_CHECK;
+  // Isolate every test from the host's real ~/.aikit/cache/update.json by
+  // pointing the cache at a per-test temp path that won't exist initially.
+  _internal.cacheFileOverride = join(
+    tmpdir(),
+    `aikit-notify-test-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}.json`
+  );
   stderr = [];
   vi.spyOn(process.stderr, "write").mockImplementation((chunk: unknown) => {
     stderr.push(String(chunk));
@@ -40,6 +48,7 @@ afterEach(() => {
   Object.defineProperty(process.stdout, "isTTY", { value: origTTY, configurable: true });
   if (origCI !== undefined) process.env.CI = origCI;
   if (origDisable !== undefined) process.env.AIKIT_NO_UPDATE_CHECK = origDisable;
+  _internal.cacheFileOverride = undefined;
   vi.restoreAllMocks();
 });
 

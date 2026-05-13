@@ -21,9 +21,9 @@ This repo dogfoods its own conventions: `AGENTS.md` is the single source of trut
 Run a single test: `npx vitest run test/path.test.ts -t "name"`.
 
 ## Project layout
-- `src/cli.ts`           — entry point; routes 10 commands (`init`, `sync`, `update`, `diff`, `add`, `list`, `doctor`, `report`, `learn`, `scaffold`)
+- `src/cli.ts`           — entry point; routes 9 commands (`init`, `sync`, `update`, `diff`, `add`, `list`, `doctor`, `report`, `learn`, `whatsnew`)
 - `src/commands/`        — one file per command; loaded via dynamic `import()`
-- `src/render/`          — BEGIN/END marker engine (4 dialects: markdown, JSON, YAML, shell)
+- `src/render/`          — BEGIN/END marker engine (4 dialects: markdown, JSON, YAML, shell). Also exports named-section helpers (`readSection`, `writeSection`, `appendSection`) used by the `/docs` skill.
 - `src/render/dialects/` — Phase-2 per-tool translators (Cursor MDC today; Claude/Aider/Copilot/Gemini queued)
 - `src/catalog/`         — runtime loader for `catalog/` templates; exports `CATALOG_ROOT` resolved via walk-up search
 - `src/detect/`          — git/CI state detection (guards destructive writes)
@@ -35,8 +35,8 @@ Run a single test: `npx vitest run test/path.test.ts -t "name"`.
 - `catalog/docs/`        — `claude-md-reference.md` shipped to downstream users at scope ≥ standard
 - `catalog/agents/tier1/`, `catalog/agents/tier2/` — tiered agent roster (mirrors `catalog/skills/`)
 - `catalog/{skills,commands,ci,mcp,settings,devcontainer,husky,plugin}/` — other shipped artefacts
-- `catalog/templates/html-artifacts/` — 20 forked HTML reference templates + `MANIFEST.json`, scaffolded via `aikit scaffold html`
-- `src/templates/`        — `TEMPLATES_ROOT` walk-up resolver (mirrors `src/catalog/`) and manifest loader
+- `catalog/templates/docs/`   — starter HTML for the `/docs` skill (project documentation tree)
+- `catalog/templates/decide/` — single tradeoff template for the `/decide` skill (decision log under `docs/decisions/`)
 - `test/`                — vitest specs (co-located by feature)
 - `docs/`                — project-internal docs: observability/dialects/learn deep dives, claude-md-reference
 - `scripts/`             — repo tooling (`catalog-check.js`, etc.)

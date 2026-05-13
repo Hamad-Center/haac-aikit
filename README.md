@@ -6,13 +6,6 @@
 
 One command drops a working AI-coding setup into any repo — rules, skills, safety hooks, subagents, MCP stub, CI templates — for Claude Code, Cursor, Copilot, Windsurf, Aider, Gemini CLI, and Codex.
 
-> [!TIP]
-> **Just want HTML output from Claude Code?** Skip the full kit and install only the html-artifacts skill + 20 templates:
->
-> ```bash
-> npx haac-aikit init html
-> ```
-
 ## Quickstart
 
 ```bash
@@ -46,7 +39,8 @@ npx haac-aikit --yes --tools=claude,cursor,copilot --preset=standard
 - **14 agents** in `.claude/agents/` — planner, reviewer, debugger, pr-describer, and more.
 - **Safety hooks** — blocks force-push to main, secret commits, `rm -rf`, reads of `.env*` / `.ssh*` / `.aws*`. Fires before the tool call, doesn't rely on the model cooperating.
 - **Rule observability hooks** — logs which rules load and which get violated, feeds `aikit doctor --rules`.
-- **HTML design system** — `docs/aikit-html-design-system.html` ships with every standard install; use `/html` to generate rich browser-viewable artifacts instead of long markdown.
+- **`/docs` skill** — keeps a small HTML documentation tree at `docs/` current. Section-bounded updates so the agent reads/edits one block, not the whole file.
+- **`/decide` skill (opt-in)** — generates one rich HTML tradeoff page per decision under `docs/decisions/`. Plain-language pros/cons, recommended option marked, written so a non-engineer stakeholder can scan it.
 - CI workflows: gitleaks, standard CI, optional `@claude` PR responder.
 
 ### Everything scope adds
@@ -60,6 +54,23 @@ Dev container, OTel exporter, plugin wrapper, auto-sync CI, shape-specific agent
 **Dialect translation.** One canonical `AGENTS.md`, reformatted per tool — proper MDC frontmatter for Cursor, emphasis tokens for Claude, imperative phrasing for Aider. You stop maintaining four copies of the same rules. → [docs/dialects.md](docs/dialects.md)
 
 **Learn from your PR history.** `aikit learn --limit=30` mines merged PR review comments for repeated corrections and proposes them as new rules. No ML — just regex, a stopword list, and Jaccard similarity. → [docs/learn.md](docs/learn.md)
+
+## Why the HTML side stays small (one starter, not 20 templates)
+
+An earlier version of this kit shipped 20 HTML templates — PR reviews, slide decks, design systems, prototype animations, feature-flag editors, prompt tuners. Beautiful catalog. **We deleted it.** Here's the honest reason:
+
+- **Developers don't browse a 20-template catalog.** They open the skill, see the wall of patterns, scroll past it, and write whatever HTML they were going to write anyway. Most of those templates were never reached for in practice. A library nobody borrows from is just shelves.
+- **A 205-line always-on skill is expensive to keep around.** Every agent invocation paid for that context, even when the user wasn't generating HTML at all. We were taxing every conversation to support a rare action.
+- **Two real jobs, not twenty edge cases.** When we asked what people actually needed HTML for, two patterns kept surfacing: (1) **living project docs** they could share for handover, and (2) **tradeoff pages** when there's a decision to make. Everything else was a curated showcase, not a tool.
+
+So `/html` got split into two focused skills:
+
+- **`/docs`** — always-on, ~80-line skill, one starter HTML template. Maintains an HTML doc tree at `docs/` with section-bounded surgical updates.
+- **`/decide`** — opt-in tier2, ~50-line skill, one rich tradeoff template. Each call writes a new dated file under `docs/decisions/`.
+
+Both lean on the marker engine for section-level reads/writes (HTML stays cheap because the agent never reloads the whole file). The skill files together are smaller than the old single skill alone. **Less to read, less to maintain, more actual usage.**
+
+If you want the deleted templates back, fork the previous release (`git checkout v0.10.0 -- catalog/templates/html-artifacts/`) — they're forks of [github.com/ThariqS/html-effectiveness](https://github.com/ThariqS/html-effectiveness) and still useful as reference material.
 
 ## Commands
 
@@ -90,7 +101,7 @@ aikit learn --limit=30        propose rules from your PR review history
 
 ## Status
 
-0.8.0. Holding 1.0 until at least three external teams have used the observability loop on real PRs. Until then, expect breaking changes between minor versions.
+0.11.0. Holding 1.0 until at least three external teams have used the observability loop on real PRs. Until then, expect breaking changes between minor versions.
 
 Looking for teams to try it — feedback shapes 1.0. Comment on [issue #1](https://github.com/Hamad-Center/haac-aikit/issues/1).
 

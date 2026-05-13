@@ -36,10 +36,15 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
+function getCacheFile(): string {
+  return _internal.cacheFileOverride ?? CACHE_FILE;
+}
+
 function readCache(): UpdateCache | null {
-  if (!existsSync(CACHE_FILE)) return null;
+  const path = getCacheFile();
+  if (!existsSync(path)) return null;
   try {
-    const raw = readFileSync(CACHE_FILE, "utf8");
+    const raw = readFileSync(path, "utf8");
     const parsed = JSON.parse(raw) as unknown;
     if (
       typeof parsed === "object" &&
@@ -57,8 +62,9 @@ function readCache(): UpdateCache | null {
 
 function writeCache(cache: UpdateCache): void {
   try {
-    mkdirSync(dirname(CACHE_FILE), { recursive: true });
-    writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2));
+    const path = getCacheFile();
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, JSON.stringify(cache, null, 2));
   } catch {
     // Best effort — never let cache write failures affect the CLI.
   }
@@ -140,4 +146,14 @@ export async function checkAndNotify(argv: CliArgs, currentVersion: string): Pro
 }
 
 // Test seam — lets tests override the cache file location without mocking fs.
-export const _internal = { CACHE_FILE, CACHE_DIR };
+// Set `_internal.cacheFileOverride` in `beforeEach` to point at a temp path
+// (or a non-existent path) to isolate tests from the host's real cache.
+export const _internal: {
+  CACHE_FILE: string;
+  CACHE_DIR: string;
+  cacheFileOverride: string | undefined;
+} = {
+  CACHE_FILE,
+  CACHE_DIR,
+  cacheFileOverride: undefined,
+};

@@ -2,6 +2,30 @@
   "version": 1,
   "releases": [
     {
+      "version": "0.11.0",
+      "date": "2026-05-13",
+      "headline": "/html replaced by /docs + /decide — fewer templates, sharper jobs",
+      "highlights": [
+        "NEW `/docs` skill (tier1, ~80 lines) — maintains an HTML documentation tree at `docs/` with section-bounded surgical updates",
+        "NEW `/decide` skill (tier2, ~50 lines) — single rich tradeoff page per decision, written to `docs/decisions/YYYY-MM-DD-<slug>.html`",
+        "NEW marker engine helpers `readSection`, `writeSection`, `appendSection` for `<!-- BEGIN:haac-aikit:section:<id> -->` blocks (round-trip tested)",
+        "REMOVED `/html` skill (was 205 lines, 9 patterns, 20 templates) and `aikit scaffold html` CLI",
+        "REMOVED `aikit init html` scope and `docs/aikit-html-design-system.html` shipped doc"
+      ],
+      "breaking": [
+        "`/html` slash command is gone — use `/docs` for living docs and `/decide` for tradeoff pages",
+        "`aikit init html` scope removed — use `aikit init --scope minimal` (or standard) instead",
+        "`aikit scaffold html` removed — agents read templates directly from `.aikit/templates/`"
+      ],
+      "migration": [
+        "Run `aikit sync` to pull new `/docs` and `/decide` templates into `.aikit/templates/`",
+        "Delete the orphaned `.aikit/templates/html-artifacts/` and `docs/aikit-html-design-system.html` if you have no local edits worth keeping"
+      ],
+      "links": {
+        "changelog": "https://github.com/Hamad-Center/haac-aikit/blob/main/CHANGELOG.md#0110---2026-05-13"
+      }
+    },
+    {
       "version": "0.9.0",
       "date": "2026-05-12",
       "headline": "HTML artifact scaffolding + 20 forked templates + cross-tool skill discovery",

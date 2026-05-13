@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{ONE_LINE_DECISION}}">
+<meta name="aikit-doc-type" content="decision">
+<style>
+:root {
+  --clay: #D97757;
+  --slate: #141413;
+  --ivory: #FAF9F5;
+  --oat: #E3DACC;
+  --olive: #788C5D;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --white: #FFFFFF;
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--slate);
+  font-family: var(--sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
+
+h1, h2, h3 { font-family: var(--serif); margin: 0 0 8px; }
+h1 { font-size: clamp(28px, 4vw, 38px); }
+h2 { font-size: clamp(20px, 2.4vw, 26px); margin-top: 48px; }
+h3 { font-size: 17px; margin: 0 0 6px; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-500);
+}
+
+.decision-needed {
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  border-left: 4px solid var(--clay);
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin: 24px 0 36px;
+  box-shadow: 0 1px 3px rgba(20, 20, 19, 0.06);
+}
+.decision-needed .question {
+  font-family: var(--serif);
+  font-size: 22px;
+  margin: 6px 0 12px;
+}
+.option-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.option-chips .chip {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--oat);
+  color: var(--slate);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.option-chips .chip.recommended { background: var(--olive); color: var(--white); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  padding: 18px;
+}
+.card.recommended { border-color: var(--olive); border-width: 2px; }
+.card .summary { color: var(--gray-700); margin: 4px 0 14px; }
+.card ul { list-style: none; padding: 0; margin: 8px 0; font-size: 14px; }
+.card li { padding-left: 18px; position: relative; margin: 4px 0; }
+.card li.pro::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--olive);
+  position: absolute; left: 2px; top: 8px;
+}
+.card li.con::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--clay);
+  position: absolute; left: 2px; top: 8px;
+}
+.card .how {
+  background: var(--gray-150); padding: 10px 12px; border-radius: 4px;
+  font-size: 13px; margin-top: 12px;
+}
+
+table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--gray-300); }
+th { background: var(--gray-150); font-weight: 600; font-family: var(--mono); font-size: 12px; text-transform: uppercase; }
+
+.tech-block { background: var(--white); border: 1px solid var(--gray-300); border-radius: 6px; padding: 18px; margin-top: 12px; }
+.tech-block h3 { color: var(--gray-700); }
+
+.recommendation {
+  background: var(--white);
+  border: 1px solid var(--olive);
+  border-left: 4px solid var(--olive);
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin-top: 32px;
+}
+.recommendation .pick {
+  font-family: var(--serif); font-size: 22px; margin: 0 0 8px;
+}
+.recommendation .reason { color: var(--gray-700); }
+.recommendation .flip {
+  margin-top: 12px; font-size: 13px; color: var(--gray-500); font-style: italic;
+}
+
+code { font-family: var(--mono); font-size: 0.9em; background: var(--gray-150); padding: 1px 5px; border-radius: 3px; }
+a { color: var(--clay); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; border-radius: 2px; }
+
+footer.provenance {
+  margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--gray-300);
+  font-family: var(--mono); font-size: 11px; color: var(--gray-500);
+}
+
+@media (max-width: 720px) {
+  main { padding: 24px 16px 64px; }
+  .cards { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<main>
+
+<header>
+  <p class="eyebrow">Decision · {{DATE}}</p>
+  <h1>{{TITLE}}</h1>
+</header>
+
+<aside class="decision-needed" aria-labelledby="decision-question">
+  <p class="eyebrow">Decision needed</p>
+  <p id="decision-question" class="question">{{ONE_LINE_DECISION_QUESTION}}</p>
+  <div class="option-chips" role="list">
+    <span class="chip" role="listitem">A — {{OPTION_A_NAME}}</span>
+    <span class="chip recommended" role="listitem">B — {{OPTION_B_NAME}} ★</span>
+    <span class="chip" role="listitem">C — {{OPTION_C_NAME}}</span>
+  </div>
+</aside>
+
+<section id="options" aria-labelledby="options-heading">
+  <h2 id="options-heading">Options</h2>
+  <div class="cards">
+
+    <article class="card">
+      <h3>A — {{OPTION_A_NAME}}</h3>
+      <p class="summary">{{OPTION_A_SUMMARY}}</p>
+      <ul aria-label="Pros and cons of option A">
+        <li class="pro">{{OPTION_A_PRO_1}}</li>
+        <li class="pro">{{OPTION_A_PRO_2}}</li>
+        <li class="con">{{OPTION_A_CON_1}}</li>
+      </ul>
+      <div class="how"><strong>How it works:</strong> {{OPTION_A_HOW}}</div>
+    </article>
+
+    <article class="card recommended" aria-label="Recommended option">
+      <h3>B — {{OPTION_B_NAME}} <span aria-hidden="true">★</span></h3>
+      <p class="summary">{{OPTION_B_SUMMARY}}</p>
+      <ul aria-label="Pros and cons of option B">
+        <li class="pro">{{OPTION_B_PRO_1}}</li>
+        <li class="pro">{{OPTION_B_PRO_2}}</li>
+        <li class="con">{{OPTION_B_CON_1}}</li>
+      </ul>
+      <div class="how"><strong>How it works:</strong> {{OPTION_B_HOW}}</div>
+    </article>
+
+    <article class="card">
+      <h3>C — {{OPTION_C_NAME}}</h3>
+      <p class="summary">{{OPTION_C_SUMMARY}}</p>
+      <ul aria-label="Pros and cons of option C">
+        <li class="pro">{{OPTION_C_PRO_1}}</li>
+        <li class="con">{{OPTION_C_CON_1}}</li>
+        <li class="con">{{OPTION_C_CON_2}}</li>
+      </ul>
+      <div class="how"><strong>How it works:</strong> {{OPTION_C_HOW}}</div>
+    </article>
+
+  </div>
+</section>
+
+<section id="comparison" aria-labelledby="comparison-heading">
+  <h2 id="comparison-heading">Side by side</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th>A — {{OPTION_A_NAME}}</th>
+        <th>B — {{OPTION_B_NAME}}</th>
+        <th>C — {{OPTION_C_NAME}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Cost</td><td>{{A_COST}}</td><td>{{B_COST}}</td><td>{{C_COST}}</td></tr>
+      <tr><td>Complexity</td><td>{{A_COMPLEXITY}}</td><td>{{B_COMPLEXITY}}</td><td>{{C_COMPLEXITY}}</td></tr>
+      <tr><td>Reversibility</td><td>{{A_REVERSIBILITY}}</td><td>{{B_REVERSIBILITY}}</td><td>{{C_REVERSIBILITY}}</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="technical" aria-labelledby="technical-heading">
+  <h2 id="technical-heading">The technical bit (in plain language)</h2>
+  <div class="tech-block">
+    <h3>A — {{OPTION_A_NAME}}</h3>
+    <p>{{OPTION_A_TECH_PLAIN}}</p>
+  </div>
+  <div class="tech-block">
+    <h3>B — {{OPTION_B_NAME}}</h3>
+    <p>{{OPTION_B_TECH_PLAIN}}</p>
+  </div>
+  <div class="tech-block">
+    <h3>C — {{OPTION_C_NAME}}</h3>
+    <p>{{OPTION_C_TECH_PLAIN}}</p>
+  </div>
+</section>
+
+<aside class="recommendation" aria-labelledby="recommendation-heading">
+  <p class="eyebrow" id="recommendation-heading">Recommendation</p>
+  <p class="pick">★ Pick {{RECOMMENDED_LETTER}} — {{RECOMMENDED_NAME}}</p>
+  <p class="reason">{{RECOMMENDATION_REASON}}</p>
+  <p class="flip"><strong>Flip to a different option if:</strong> {{FLIP_CONDITION}}</p>
+</aside>
+
+<footer class="provenance">
+  Sources: {{SOURCES}} — generated {{ISO_TIMESTAMP}}
+</footer>
+
+</main>
+
+</body>
+</html>

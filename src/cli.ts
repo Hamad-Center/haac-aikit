@@ -18,9 +18,6 @@ USAGE
 
 COMMANDS
   (default)         Interactive wizard — drop a complete AI setup into this repo
-  init html         Install only the html-artifacts skill + 20 templates + /html
-                    command. No AGENTS.md, no hooks, no CI. (shorthand for
-                    \`aikit init --scope html --yes\`)
   sync              Regenerate per-tool files from .aikitrc.json (idempotent)
   update            Pull latest templates; show diff; prompt before writing
   diff              Show drift between current state and a fresh generation
@@ -30,9 +27,6 @@ COMMANDS
   doctor --rules    Rule observability report — which rules fire, are followed, are dead
   report            Markdown / JSON rule-adherence summary (for PR comments / CI)
   learn             Mine recent PR review comments for repeated corrections; propose rules
-  scaffold html [<slug>]
-                    Drop an HTML artifact template into the current directory.
-                    Run \`aikit scaffold html --list\` to see all 20 templates.
   whatsnew          Show release notes for the current version (--all for full history)
 
 FLAGS
@@ -43,13 +37,11 @@ FLAGS
   --no-color          Disable ANSI colours
   --config=<path>     Use a specific .aikitrc.json location
   --tools=<list>      Comma-separated tool list (claude,cursor,copilot,...)
-  --scope=<scope>     minimal | standard | everything | html  (--preset is an alias)
+  --scope=<scope>     minimal | standard | everything  (--preset is an alias)
   --rules             (with doctor)  Show rule-observability buckets
   --format=<fmt>      (with report / doctor --rules)  markdown | json
   --since=<date>      (with report)  Restrict events to after this ISO date
   --limit=<n>         (with learn)   How many merged PRs to scan (default 30)
-  --list              (with scaffold) Print all available templates and exit
-  --name=<filename>   (with scaffold) Output filename (defaults to template's own name)
   --all               (with whatsnew) Show release notes for all versions
   --no-update-check   Skip the once-per-day npm registry check for this invocation
                       (also honored: AIKIT_NO_UPDATE_CHECK=1 env var)
@@ -59,8 +51,8 @@ FLAGS
 
 async function main(): Promise<void> {
   const argv = mri<CliArgs>(process.argv.slice(2), {
-    boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules", "list", "all", "no-update-check"],
-    string: ["config", "tools", "preset", "scope", "format", "since", "limit", "name"],
+    boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules", "all", "no-update-check"],
+    string: ["config", "tools", "preset", "scope", "format", "since", "limit"],
     alias: { y: "yes", h: "help", v: "version", scope: "preset" },
     default: {
       yes: false,
@@ -71,7 +63,6 @@ async function main(): Promise<void> {
       help: false,
       version: false,
       rules: false,
-      list: false,
       all: false,
       "no-update-check": false,
     },
@@ -141,11 +132,6 @@ async function main(): Promise<void> {
     case "learn": {
       const { runLearn } = await import("./commands/learn.js");
       await runLearn(argv);
-      break;
-    }
-    case "scaffold": {
-      const { runScaffold } = await import("./commands/scaffold.js");
-      await runScaffold(argv);
       break;
     }
     case "whatsnew": {

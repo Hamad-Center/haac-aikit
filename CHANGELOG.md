@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The CLI surfaces these notes via `aikit whatsnew` (reads `catalog/release-notes.json`) and, when a newer version is on npm, prints a one-line banner once per 24h.
 
+## [0.11.0] - 2026-05-13
+
+### Breaking
+- **`/html` skill removed.** Replaced by two focused skills: `/docs` (always-on, tier1) for living project documentation and `/decide` (opt-in, tier2) for one-page decision artifacts. Diagnosis: the old skill was 205 lines of always-on context with 9 patterns and 20 templates, and the dual scaffolding paths (agent + CLI) plus the dedicated init scope were infrastructure-for-a-feature. Two skills with one job each replaces 20 templates doing 20 jobs at 60%.
+- **`aikit init html` scope removed.** The `Scope` type loses the `html` variant; pass `--scope minimal | standard | everything`.
+- **`aikit scaffold html` command removed.** No replacement — the `/docs` and `/decide` skills read their templates directly from `.aikit/templates/`.
+- **`docs/aikit-html-design-system.html` no longer synced.** The new `/docs` and `/decide` templates inline their own design tokens, so the standalone reference file is gone. If you customized it, copy the tokens into your project before running `aikit sync`.
+
+### Added
+- **`/docs` skill (`catalog/skills/tier1/docs.md`, ~80 lines)** + **`/docs` slash command** — maintains an HTML documentation tree at `docs/`: many small per-area files plus a rolled-up `docs/index.html`. Reads/writes single sections through marker-bounded `<!-- BEGIN:haac-aikit:section:<id> -->` blocks so updates stay surgical and cheap.
+- **`/decide` skill (`catalog/skills/tier2/decide.md`, ~50 lines)** + **`/decide` slash command** — generates a single rich HTML page comparing 2-4 options when the user is about to make a decision. Each invocation writes a new dated file under `docs/decisions/`. Opt-in (tier2) so it doesn't load on every agent turn.
+- **`catalog/templates/docs/starter.html`** — minimal starter scaffold for `/docs` with design tokens, landmark roles, a11y baseline, and one example sectioned block to copy.
+- **`catalog/templates/decide/template.html`** — single rich tradeoff template for `/decide`: option cards, pros/cons grid, side-by-side comparison, plain-language technical block, recommendation callout.
+- **Marker engine: named-section helpers.** `src/render/markers.ts` now exports `readSection`, `writeSection`, `appendSection`, `hasSection` for `<!-- BEGIN:haac-aikit:section:<id> -->` blocks. Round-trip tested in `test/markers-section.test.ts` (19 cases). The existing `BEGIN:haac-aikit` block is untouched and still load-bearing.
+
+### Migration
+- Run `aikit sync` to pull the new `/docs` and `/decide` templates into `.aikit/templates/`.
+- The old `aikit-html-design-system.html` and `.aikit/templates/html-artifacts/` will be flagged as orphaned — delete them manually if you don't have local edits worth keeping.
+- `aikit init html` callers should switch to `aikit init --scope minimal --yes` and add `/docs` from the catalog explicitly via `aikit add` (or accept the standard scope which includes it).
+
 ## [0.9.0] - 2026-05-12
 
 ### Added

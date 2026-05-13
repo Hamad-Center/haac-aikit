@@ -104,3 +104,130 @@ export function extractMarkerRegion(content: string, filePath: string): string |
   if (beginIdx === -1 || endIdx === -1 || endIdx <= beginIdx) return null;
   return content.slice(beginIdx + begin.length, endIdx).trim();
 }
+
+/* ------------------------------------------------------------------ *
+ * Named-section markers: BEGIN:haac-aikit:section:<id>
+ *
+ * These are siblings of the main BEGIN:haac-aikit block. They give the
+ * /docs and /decide skills a way to read or edit one named slice of a
+ * file without re-loading the whole thing.
+ *
+ * Same dialect rules apply (see makeBegin/makeEnd above).
+ * ------------------------------------------------------------------ */
+
+const SECTION_ID_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
+
+function validateSectionId(id: string): void {
+  if (!SECTION_ID_REGEX.test(id)) {
+    throw new Error(
+      `invalid section id: ${JSON.stringify(id)} (must match ${SECTION_ID_REGEX})`
+    );
+  }
+}
+
+function makeSectionBegin(dialect: Dialect, id: string): string {
+  switch (dialect) {
+    case "json":
+      return `"// BEGIN:${MARKER}:section:${id}": ""`;
+    case "yaml":
+      return `# BEGIN:${MARKER}:section:${id}`;
+    case "markdown":
+      return `<!-- BEGIN:${MARKER}:section:${id} -->`;
+  }
+}
+
+function makeSectionEnd(dialect: Dialect, id: string): string {
+  switch (dialect) {
+    case "json":
+      return `"// END:${MARKER}:section:${id}": ""`;
+    case "yaml":
+      return `# END:${MARKER}:section:${id}`;
+    case "markdown":
+      return `<!-- END:${MARKER}:section:${id} -->`;
+  }
+}
+
+/**
+ * Returns true if the named section exists in the file.
+ */
+export function hasSection(content: string, sectionId: string, filePath: string): boolean {
+  validateSectionId(sectionId);
+  const dialect = detectDialect(filePath);
+  const begin = makeSectionBegin(dialect, sectionId);
+  const end = makeSectionEnd(dialect, sectionId);
+  const beginIdx = content.indexOf(begin);
+  const endIdx = content.indexOf(end);
+  return beginIdx !== -1 && endIdx !== -1 && endIdx > beginIdx;
+}
+
+/**
+ * Read the body of a named section. Returns null if the section is missing.
+ * The returned body has leading/trailing newlines stripped (`.trim()`).
+ */
+export function readSection(
+  content: string,
+  sectionId: string,
+  filePath: string
+): string | null {
+  validateSectionId(sectionId);
+  const dialect = detectDialect(filePath);
+  const begin = makeSectionBegin(dialect, sectionId);
+  const end = makeSectionEnd(dialect, sectionId);
+
+  const beginIdx = content.indexOf(begin);
+  const endIdx = content.indexOf(end);
+  if (beginIdx === -1 || endIdx === -1 || endIdx <= beginIdx) return null;
+
+  return content.slice(beginIdx + begin.length, endIdx).trim();
+}
+
+/**
+ * Replace the body of a named section. Throws if the section is missing —
+ * use {@link appendSection} to create a new one.
+ *
+ * Round-trip property: writeSection(c, id, readSection(c, id)!, file) === c
+ * when the round-trip cases in the test suite pass.
+ */
+export function writeSection(
+  content: string,
+  sectionId: string,
+  newBody: string,
+  filePath: string
+): string {
+  validateSectionId(sectionId);
+  const dialect = detectDialect(filePath);
+  const begin = makeSectionBegin(dialect, sectionId);
+  const end = makeSectionEnd(dialect, sectionId);
+
+  const beginIdx = content.indexOf(begin);
+  const endIdx = content.indexOf(end);
+  if (beginIdx === -1 || endIdx === -1 || endIdx <= beginIdx) {
+    throw new Error(`section not found: ${JSON.stringify(sectionId)} in ${filePath}`);
+  }
+
+  const before = content.slice(0, beginIdx + begin.length);
+  const after = content.slice(endIdx);
+  return `${before}\n${newBody}\n${after}`;
+}
+
+/**
+ * Append a new named section at the end of the file. Throws if a section
+ * with that id already exists.
+ */
+export function appendSection(
+  content: string,
+  sectionId: string,
+  body: string,
+  filePath: string
+): string {
+  validateSectionId(sectionId);
+  if (hasSection(content, sectionId, filePath)) {
+    throw new Error(`section already exists: ${JSON.stringify(sectionId)} in ${filePath}`);
+  }
+  const dialect = detectDialect(filePath);
+  const begin = makeSectionBegin(dialect, sectionId);
+  const end = makeSectionEnd(dialect, sectionId);
+
+  const separator = content.length > 0 && !content.endsWith("\n") ? "\n\n" : content.length > 0 ? "\n" : "";
+  return `${content}${separator}${begin}\n${body}\n${end}\n`;
+}
