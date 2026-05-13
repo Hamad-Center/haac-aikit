@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 The CLI surfaces these notes via `aikit whatsnew` (reads `catalog/release-notes.json`) and, when a newer version is on npm, prints a one-line banner once per 24h.
 
+## [0.11.1] - 2026-05-13
+
+### Docs
+- Rewrote the GitHub Pages landing (`docs/index.html`): new hero ("Docs that update themselves."), without/with comparison block (✗ pains vs ✓ outcomes), Thariq Shihipar's article elevated from footnote to a clay-bordered pull-quote attribution.
+- Trimmed `README.md` from 114 → 66 lines: pulled `/docs` and `/decide` to the top as the headline feature with the article credit inline, removed the duplicate "what makes it different" prose section in favor of the comparison table, merged Status/Contributing/License into one footer block.
+
+### Notes
+- Same code surface as 0.11.0 — pure docs patch. The tag for 0.11.0 ended up one commit behind the latest README rewrite at publish time; 0.11.1 fixes that alignment so `git checkout v0.11.1` shows the same docs that ship in the tarball.
+
 ## [0.11.0] - 2026-05-13
 
 ### Breaking

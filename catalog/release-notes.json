@@ -2,6 +2,20 @@
   "version": 1,
   "releases": [
     {
+      "version": "0.11.1",
+      "date": "2026-05-13",
+      "headline": "Docs-only patch: punchier landing + trimmed README",
+      "highlights": [
+        "Landing: new hero \"Docs that update themselves\" + without/with comparison block",
+        "Landing: Thariq Shihipar's HTML article elevated to a pull-quote attribution",
+        "README: 114 → 66 lines, /docs + /decide pulled to top as headline feature",
+        "No code changes — same surface as 0.11.0"
+      ],
+      "links": {
+        "changelog": "https://github.com/Hamad-Center/haac-aikit/blob/main/CHANGELOG.md#0111---2026-05-13"
+      }
+    },
+    {
       "version": "0.11.0",
       "date": "2026-05-13",
       "headline": "/html replaced by /docs + /decide — fewer templates, sharper jobs",

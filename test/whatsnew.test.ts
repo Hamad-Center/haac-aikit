@@ -34,13 +34,15 @@ describe("aikit whatsnew", () => {
   it("prints the latest release headline and highlights", async () => {
     await runWhatsNew(args());
     const output = stdout.join("");
-    expect(output).toContain("haac-aikit v0.11.0");
+    expect(output).toContain("haac-aikit v0.11.1");
     expect(output).toContain("Highlights");
     expect(output).toContain("/docs");
   });
 
   it("includes the migration section when present", async () => {
-    await runWhatsNew(args());
+    // 0.11.1 is a docs-only patch with no migration; --all surfaces 0.11.0
+    // (which has the migration block) so we can assert the format renders.
+    await runWhatsNew(args({ all: true }));
     const output = stdout.join("");
     expect(output).toContain("Migration");
     expect(output).toContain("aikit sync");
@@ -56,7 +58,7 @@ describe("aikit whatsnew", () => {
   it("--all flag shows all releases (not just latest)", async () => {
     await runWhatsNew(args({ all: true }));
     const output = stdout.join("");
-    expect(output).toContain("haac-aikit v0.11.0");
+    expect(output).toContain("haac-aikit v0.11.1");
     expect(output).toContain("haac-aikit v0.9.0");
     // The "showing latest only" hint should NOT appear when --all is set.
     expect(output).not.toContain("showing latest only");
