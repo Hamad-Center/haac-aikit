@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>haac-aikit — one command for Claude Code's HTML output</title>
-  <meta name="description" content="Drop the html-artifacts skill and 20 production-ready templates into any existing repo with one command. No AGENTS.md, no MCP, no hooks — just HTML output from Claude Code.">
+  <title>haac-aikit — living project docs and decision pages, in two focused skills</title>
+  <meta name="description" content="Two skills that earn their weight: /docs keeps your project documentation current as an HTML tree, /decide writes one rich tradeoff page per decision. Replaces an earlier 20-template version that was too much overengineering for everyday use.">
   <meta name="aikit-pattern" content="Landing">
-  <meta property="og:title" content="haac-aikit — one command for Claude Code's HTML output">
-  <meta property="og:description" content="Drop 20 HTML templates + the skill that uses them into any repo in 2 seconds. npx haac-aikit init html">
+  <meta property="og:title" content="haac-aikit — living project docs and decision pages, in two focused skills">
+  <meta property="og:description" content="Two focused skills (/docs + /decide) for living project documentation and decision pages. Replaces a 20-template version that was overengineering — but you can still download it if you want.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://hamad-center.github.io/haac-aikit/">
   <meta name="twitter:card" content="summary_large_image">
@@ -236,70 +236,78 @@
 </head>
 <body>
   <main class="page">
-    <div class="eyebrow">v0.10.0 · npm</div>
-    <h1>One command for Claude Code's HTML output</h1>
-    <p class="tagline">Drop the html-artifacts skill and 20 production-ready templates into any existing repo. 2 seconds. No AGENTS.md, no MCP, no hooks — just HTML output.</p>
+    <div class="eyebrow">v0.11.0 · npm</div>
+    <h1>Two skills, not twenty templates</h1>
+    <p class="tagline">A small kit for keeping a project documented as it changes, and for writing one clean tradeoff page when there's a decision to make. That's it. We tried the 20-template version. It was too much.</p>
 
     <div class="install" role="region" aria-label="Install command">
       <span class="prompt" aria-hidden="true">$</span>
-      <code id="install-cmd">npx haac-aikit init html</code>
+      <code id="install-cmd">npx haac-aikit</code>
       <button class="copy-btn" type="button" aria-label="Copy install command" onclick="
         navigator.clipboard.writeText(document.getElementById('install-cmd').textContent).then(()=>{this.textContent='copied';this.classList.add('copied');setTimeout(()=>{this.textContent='copy';this.classList.remove('copied')},1400)});
       ">copy</button>
     </div>
 
     <div class="install-meta" aria-hidden="true">
-      <span class="pill">~250KB total</span>
-      <span class="pill">no breaking changes</span>
-      <span class="pill">drops into any repo</span>
+      <span class="pill">~157KB bundle</span>
+      <span class="pill">cross-tool (7 agents)</span>
+      <span class="pill">v0.11 breaking — see migration</span>
     </div>
 
     <section aria-labelledby="why-heading">
-      <h2 id="why-heading">Why</h2>
-      <p>After Thariq's piece on the <a href="https://thariqs.github.io/html-effectiveness/">unreasonable effectiveness of HTML for Claude Code</a>, I tried setting it up in my own projects. It took longer than it should — picking templates, writing the skill, wiring the slash command.</p>
-      <p>So I packaged it into one npm install. Drops into any existing repo, old or new. The install is additive — it doesn't touch anything outside the html-artifacts paths, and the artifact output directory is gitignored automatically.</p>
+      <h2 id="why-heading">Why we trimmed it down</h2>
+      <p>The previous release shipped 20 forked HTML templates — PR reviews, slide decks, design systems, prototype animations, feature-flag editors, prompt tuners. A beautiful catalog. After living with it in real projects, the honest verdict was: <strong>it was too much overengineering for the everyday cycle.</strong></p>
+      <p>Developers don't browse a 20-template menu when they're mid-task. A 205-line always-on skill is paid context on every single agent invocation, even when nobody's generating HTML. Most of the templates were never reached for in real life — they were a museum, not a workshop.</p>
+      <p>When we listed what people <em>actually</em> used HTML for, two patterns kept surfacing: <strong>living project documentation</strong> (for handover, onboarding, knowing what changed) and <strong>tradeoff pages</strong> (when there's a real decision to make). Everything else was a one-off that markdown could handle.</p>
+      <p>So <code>/html</code> got split into two focused skills, both shipping a single starter template each. <strong>This version covers 100% of the planning and project-docs work we kept reaching for</strong> — without the surface area we never used.</p>
+      <p style="margin-top:24px;color:var(--gray-500);font-size:15px;">Want the old 20 templates? They're not gone, just not the default. Run <code>git checkout v0.10.0 -- catalog/templates/html-artifacts/</code> in a clone of the repo and you have them back.</p>
     </section>
 
     <section aria-labelledby="get-heading">
       <h2 id="get-heading">What lands</h2>
       <div class="cards">
         <article class="card">
-          <h3>20 production-ready templates</h3>
-          <p>Implementation plans, code reviews, status reports, design systems, prototypes, diagrams, decks, research explainers, editor UIs. Forked from <a href="https://thariqs.github.io/html-effectiveness/">@trq212</a>'s collection with permission.</p>
+          <h3><code>/docs</code> &mdash; living project documentation</h3>
+          <p>Always-on, ~80-line skill. Maintains an HTML doc tree at <code>docs/</code>: one rolled-up <code>docs/index.html</code> plus per-area files (<code>architecture.html</code>, <code>auth.html</code>, whatever you need). Updates are section-bounded — the agent reads and edits one named block at a time, not the whole file. Cheap, surgical, idempotent.</p>
         </article>
         <article class="card">
-          <h3>A skill that uses them correctly</h3>
-          <p>Teaches Claude Code to copy + edit the template instead of writing HTML from scratch (no design drift), put jargon in tag chips not in the prose, lead every plan with a decision callout at the top, and bake in accessibility for screen readers and mobile.</p>
+          <h3><code>/decide</code> &mdash; one rich tradeoff page per call</h3>
+          <p>Opt-in (tier2), ~50-line skill. When you're about to make a non-trivial choice, generates a single rich HTML page comparing options: pros and cons as colored dots, side-by-side table, technical bit explained in plain language, recommendation marked with a star. Saves to <code>docs/decisions/YYYY-MM-DD-&lt;slug&gt;.html</code> as a permanent decision log.</p>
         </article>
         <article class="card">
-          <h3>An auto-generated gallery</h3>
-          <p>Every artifact you produce gets indexed at <code>.aikit/artifacts/index.html</code>, grouped by pattern. Your project accumulates a navigable archive of plans, reports, and reviews over time.</p>
+          <h3>The marker engine that makes it cheap</h3>
+          <p>Documents are wrapped in <code>&lt;!-- BEGIN:haac-aikit:section:&lt;id&gt; --&gt;</code> blocks. Round-trip tested, idempotent, dialect-aware. Anything you write outside the markers — user-authored prose, hand-edited content — is preserved verbatim on every sync. This is what makes living docs viable without re-reading every file.</p>
         </article>
       </div>
     </section>
 
     <section aria-labelledby="use-heading">
       <h2 id="use-heading">Using it</h2>
-      <p>Once installed, the <code>/html</code> slash command does the rest:</p>
+      <p>Two slash commands. The agent proposes before writing — no silent edits.</p>
       <div class="flow" role="region" aria-label="Example interaction">
-        <div><span class="you">you:</span> /html plan the auth refresh</div>
+        <div><span class="you">you:</span> /docs the new auth refresh flow</div>
         <div><span class="claude">claude:</span></div>
-        <div><span class="arrow">→</span><span class="step">picks the implementation-plan template</span></div>
-        <div><span class="arrow">→</span><span class="step">confirms the artifact name with you</span></div>
-        <div><span class="arrow">→</span><span class="step">if your inputs have mixed PROMOTE/HOLD/DEFER, asks which scope to render</span></div>
-        <div><span class="arrow">→</span><span class="step">fills with real content (plain language in prose, jargon in chips)</span></div>
-        <div><span class="arrow">→</span><span class="step">saves to .aikit/artifacts/NN-&lt;topic&gt;.html, regens the gallery</span></div>
+        <div><span class="arrow">→</span><span class="step">reads only the <code>flow</code> section in <code>docs/auth.html</code></span></div>
+        <div><span class="arrow">→</span><span class="step">"I'll update the auth flow section to reflect the refresh tokens — okay?"</span></div>
+        <div><span class="arrow">→</span><span class="step">on yes, writes through the marker engine (everything outside markers preserved)</span></div>
+        <div><span class="arrow">→</span><span class="step">updates the auth summary in <code>docs/index.html</code> too</span></div>
+        <div style="margin-top:12px;"><span class="you">you:</span> /decide auth: session cookies vs JWT vs Clerk</div>
+        <div><span class="claude">claude:</span></div>
+        <div><span class="arrow">→</span><span class="step">confirms options + recommendation with you in chat</span></div>
+        <div><span class="arrow">→</span><span class="step">reads the tradeoff template, fills with real pros/cons</span></div>
+        <div><span class="arrow">→</span><span class="step">writes <code>docs/decisions/2026-05-13-auth-strategy.html</code></span></div>
       </div>
-      <p style="margin-top:16px;">About 15 seconds end to end. The artifact opens with the decision callout at the top, scannable milestones, works on a phone, works with a screen reader.</p>
+      <p style="margin-top:16px;">Both pages work on a phone, work with a screen reader, and can be opened in any browser — no build step, no CDNs.</p>
     </section>
 
     <section aria-labelledby="try-heading">
       <h2 id="try-heading">Drop it into a project today</h2>
       <div class="install" role="region" aria-label="Install command (repeated)">
         <span class="prompt" aria-hidden="true">$</span>
-        <code>npx haac-aikit init html</code>
+        <code>npx haac-aikit</code>
       </div>
-      <p>If you don't have Claude Code yet, the templates still install — you can use them with any agent that can read a manifest and copy a file.</p>
+      <p>30-second wizard. Writes <code>.aikitrc.json</code> you can commit. The full kit also drops in cross-tool rules, safety hooks, agents, and CI templates — but <code>/docs</code> and <code>/decide</code> are the two skills you'll touch every week.</p>
+      <p style="color:var(--gray-500);font-size:15px;">Migrating from v0.10? Run <code>aikit sync</code> to pull the new templates, then delete the orphaned <code>.aikit/templates/html-artifacts/</code> and <code>docs/aikit-html-design-system.html</code> if you have no local edits worth keeping.</p>
     </section>
 
     <footer class="footer" role="contentinfo">
