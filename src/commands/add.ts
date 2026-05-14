@@ -4,7 +4,7 @@ import * as p from "@clack/prompts";
 import kleur from "kleur";
 import { CATALOG_ROOT } from "../catalog/index.js";
 import { readConfig, writeConfig } from "../fs/readConfig.js";
-import type { AikitConfig, AgentTier, CliArgs, ProjectShape, SkillTier } from "../types.js";
+import type { AikitConfig, AgentTier, CliArgs, SkillTier } from "../types.js";
 
 type ItemType = "skill" | "agent" | "hook";
 
@@ -12,15 +12,6 @@ const ITEM_DIRS: Record<ItemType, { catalog: string; dest: string; ext: string[]
   skill: { catalog: "skills/tier1", dest: ".claude/skills", ext: [".md"] },
   agent: { catalog: "agents/tier1", dest: ".claude/agents", ext: [".md"] },
   hook: { catalog: "hooks", dest: ".claude/hooks", ext: [".sh"] },
-};
-
-// Maps an agent name to the shapes that require it. When `aikit add backend`
-// runs, we look up which shape to add to config.shape so a future sync
-// re-installs the agent.
-const AGENT_TO_SHAPE: Record<string, ProjectShape> = {
-  frontend: "web",
-  backend: "backend",
-  mobile: "mobile",
 };
 
 interface FoundItem {
@@ -31,11 +22,23 @@ interface FoundItem {
   destDir: string;
 }
 
+// The HTML-artifact bundle: skills, matching slash commands, and template
+// directories. Installed as a unit via `aikit add --html`. Keep the list
+// alongside the four tier1 HTML skills so a missed addition here surfaces in
+// catalog-check rather than silently dropping a file from the bundle.
+const HTML_BUNDLE_ITEMS = ["docs", "decide", "directions", "roadmap"] as const;
+const HTML_BUNDLE_TEMPLATE_PACKS = ["docs", "decide", "directions", "roadmap"] as const;
+
 export async function runAdd(argv: CliArgs): Promise<void> {
+  if (argv.html) {
+    await runAddHtmlBundle(argv);
+    return;
+  }
+
   const itemArg = argv._[1];
 
   if (!itemArg) {
-    p.log.error("Usage: aikit add <name>  (e.g. aikit add brainstorming)");
+    p.log.error("Usage: aikit add <name>  (e.g. aikit add brainstorming) or aikit add --html");
     process.exit(1);
   }
 
@@ -72,6 +75,81 @@ export async function runAdd(argv: CliArgs): Promise<void> {
       process.stdout.write(`  ${kleur.dim(configChange)}\n`);
     }
   }
+}
+
+async function runAddHtmlBundle(argv: CliArgs): Promise<void> {
+  const dryPrefix = argv["dry-run"] ? "[dry-run] " : "";
+  let installed = 0;
+  let skipped = 0;
+
+  // Skills: all four live in tier1.
+  for (const name of HTML_BUNDLE_ITEMS) {
+    const src = join(CATALOG_ROOT, "skills", "tier1", `${name}.md`);
+    const dest = join(".claude/skills", `${name}.md`);
+    if (!existsSync(src)) {
+      p.log.error(`bundled skill missing in catalog: ${src}`);
+      process.exit(1);
+    }
+    if (existsSync(dest) && !argv.force) {
+      process.stdout.write(`  ${kleur.dim("·")} skill ${name} (already installed)\n`);
+      skipped++;
+      continue;
+    }
+    if (!argv["dry-run"]) {
+      mkdirSync(".claude/skills", { recursive: true });
+      copyFileSync(src, dest);
+    }
+    process.stdout.write(`${dryPrefix}${kleur.green("✓")} skill .claude/skills/${name}.md\n`);
+    installed++;
+  }
+
+  // Slash commands.
+  for (const name of HTML_BUNDLE_ITEMS) {
+    const src = join(CATALOG_ROOT, "commands", `${name}.md`);
+    const dest = join(".claude/commands", `${name}.md`);
+    if (!existsSync(src)) {
+      p.log.error(`bundled command missing in catalog: ${src}`);
+      process.exit(1);
+    }
+    if (existsSync(dest) && !argv.force) {
+      process.stdout.write(`  ${kleur.dim("·")} command /${name} (already installed)\n`);
+      skipped++;
+      continue;
+    }
+    if (!argv["dry-run"]) {
+      mkdirSync(".claude/commands", { recursive: true });
+      copyFileSync(src, dest);
+    }
+    process.stdout.write(`${dryPrefix}${kleur.green("✓")} command .claude/commands/${name}.md\n`);
+    installed++;
+  }
+
+  // Templates — every file under each pack directory.
+  for (const pack of HTML_BUNDLE_TEMPLATE_PACKS) {
+    const srcDir = join(CATALOG_ROOT, "templates", pack);
+    const destDir = join(".aikit/templates", pack);
+    if (!existsSync(srcDir)) {
+      p.log.error(`bundled template pack missing in catalog: ${srcDir}`);
+      process.exit(1);
+    }
+    if (!argv["dry-run"]) mkdirSync(destDir, { recursive: true });
+    for (const file of readdirSync(srcDir).filter((f) => /\.(html|json|md)$/.test(f))) {
+      const destFile = join(destDir, file);
+      if (existsSync(destFile) && !argv.force) {
+        process.stdout.write(`  ${kleur.dim("·")} template ${pack}/${file} (already installed)\n`);
+        skipped++;
+        continue;
+      }
+      if (!argv["dry-run"]) copyFileSync(join(srcDir, file), destFile);
+      process.stdout.write(`${dryPrefix}${kleur.green("✓")} template .aikit/templates/${pack}/${file}\n`);
+      installed++;
+    }
+  }
+
+  const summary = argv["dry-run"]
+    ? `Would install ${installed} files${skipped ? `, skip ${skipped} existing` : ""}.`
+    : `Installed ${installed} files${skipped ? `, skipped ${skipped} existing` : ""}. Use ${kleur.cyan("--force")} to overwrite.`;
+  process.stdout.write(`\n${summary}\n`);
 }
 
 function findCatalogItem(name: string): FoundItem | null {
@@ -139,18 +217,13 @@ function updateConfigForAddition(configPath: string | undefined, item: FoundItem
   let message = "";
 
   if (item.type === "agent") {
-    const shape = AGENT_TO_SHAPE[item.name];
-    if (shape && !config.shape.includes(shape)) {
-      updated = { ...config, shape: [...config.shape, shape] };
-      message = `Added "${shape}" to .aikitrc.json shape (so sync re-installs ${item.name})`;
-    }
     const agentTier = detectAgentTier(item.name);
-    if (agentTier === "tier2" && !shape) {
+    if (agentTier === "tier2") {
       const currentAgents = config.agents ?? { tier1: "all", tier2: "all", tier3: [] };
       const tier2 = currentAgents.tier2;
       if (tier2 !== "all" && !tier2.includes(item.name)) {
         updated = {
-          ...(updated ?? config),
+          ...config,
           agents: { ...currentAgents, tier2: [...tier2, item.name] },
         };
         message = `Added "${item.name}" to .aikitrc.json agents.tier2`;
@@ -159,7 +232,7 @@ function updateConfigForAddition(configPath: string | undefined, item: FoundItem
     if (agentTier === "tier3" && !(config.agents?.tier3 ?? []).includes(item.name)) {
       const currentAgents = config.agents ?? { tier1: "all", tier2: "all", tier3: [] };
       updated = {
-        ...(updated ?? config),
+        ...config,
         agents: { ...currentAgents, tier3: [...currentAgents.tier3, item.name] },
       };
       message = `Added "${item.name}" to .aikitrc.json agents.tier3`;

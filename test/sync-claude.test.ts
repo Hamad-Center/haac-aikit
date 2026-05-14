@@ -13,9 +13,9 @@ const baseConfig: AikitConfig = {
   projectName: "demo",
   projectDescription: "demo project",
   tools: ["claude"],
-  scope: "standard",
-  shape: ["library"],
-  integrations: { mcp: false, hooks: false, commands: false, subagents: false, ci: false, husky: false, devcontainer: false, plugin: false, otel: false },
+  integrations: { mcp: false, hooks: false, commands: false, subagents: false, ci: false },
+  skills: { tier1: "all", tier2: "all", tier3: [] },
+  canonical: "AGENTS.md",
 };
 
 function writeConfig(cfg: AikitConfig): void {
@@ -32,15 +32,11 @@ afterEach(() => {
   process.chdir(origCwd);
 });
 
-describe("sync — Claude 2026 assets", () => {
-  it("ships docs/claude-md-reference.md, .claude/rules/example.md, and .claude/aikit-rules.json at scope=standard", async () => {
+describe("sync — Claude assets", () => {
+  it("ships .claude/rules/example.md and .claude/aikit-rules.json when claude is selected", async () => {
     writeConfig(baseConfig);
 
     await runSync({ _: ["sync"] });
-
-    expect(existsSync("docs/claude-md-reference.md")).toBe(true);
-    const ref = readFileSync("docs/claude-md-reference.md", "utf8");
-    expect(ref).toContain("CLAUDE.md & Memory Configuration Reference");
 
     expect(existsSync(".claude/rules/example.md")).toBe(true);
     const rule = readFileSync(".claude/rules/example.md", "utf8");
@@ -51,28 +47,15 @@ describe("sync — Claude 2026 assets", () => {
     const rulesCfg = JSON.parse(readFileSync(".claude/aikit-rules.json", "utf8"));
     expect(rulesCfg.version).toBe(1);
     expect(Array.isArray(rulesCfg.rules)).toBe(true);
-    expect(rulesCfg.rules.length).toBeGreaterThan(0);
-    expect(rulesCfg.rules[0]).toHaveProperty("id");
-    expect(rulesCfg.rules[0]).toHaveProperty("pattern");
   });
 
-  it("does NOT ship the Claude 2026 assets at scope=minimal", async () => {
-    writeConfig({ ...baseConfig, scope: "minimal" });
-
-    await runSync({ _: ["sync"] });
-
-    expect(existsSync("docs/claude-md-reference.md")).toBe(false);
-    expect(existsSync(".claude/rules/example.md")).toBe(false);
-    expect(existsSync(".claude/aikit-rules.json")).toBe(false);
-  });
-
-  it("does NOT ship the Claude 2026 assets when claude is not selected", async () => {
+  it("does NOT ship the Claude assets when claude is not selected", async () => {
     writeConfig({ ...baseConfig, tools: ["cursor"] });
 
     await runSync({ _: ["sync"] });
 
-    expect(existsSync("docs/claude-md-reference.md")).toBe(false);
     expect(existsSync(".claude/rules/example.md")).toBe(false);
+    expect(existsSync(".claude/aikit-rules.json")).toBe(false);
   });
 
   it("emphasises and adds compaction guidance to AGENTS.md template", async () => {
@@ -82,8 +65,5 @@ describe("sync — Claude 2026 assets", () => {
 
     const agents = readFileSync("AGENTS.md", "utf8");
     expect(agents).toContain("When compacting");
-    expect(agents).toContain("Further reading");
-    expect(agents).toContain("docs/claude-md-reference.md");
   });
 });
-

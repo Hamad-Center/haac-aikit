@@ -13,11 +13,8 @@ const baseConfig: AikitConfig = {
   projectName: "demo",
   projectDescription: "demo",
   tools: ["claude"],
-  scope: "standard",
-  shape: ["library"],
   integrations: {
-    mcp: false, hooks: false, commands: false, subagents: true,
-    ci: false, husky: false, devcontainer: false, plugin: false, otel: false,
+    mcp: false, hooks: false, commands: false, subagents: true, ci: false,
   },
   skills: { tier1: "all", tier2: "all", tier3: [] },
   canonical: "AGENTS.md",
@@ -41,7 +38,7 @@ describe("sync — conflict resolution (headless)", () => {
     await runSync({ _: ["sync"], yes: true, "dry-run": false, force: false, "skip-git-check": false, "no-color": false, help: false, version: false });
 
     // Modify a tier1 agent locally.
-    const modifiedPath = ".claude/agents/reviewer.md";
+    const modifiedPath = ".claude/agents/orchestrator.md";
     writeFileSync(modifiedPath, "LOCAL MODIFICATION");
 
     // Second sync with --yes — should NOT overwrite.
@@ -55,13 +52,13 @@ describe("sync — conflict resolution (headless)", () => {
     writeFileSync(".aikitrc.json", JSON.stringify(baseConfig));
     await runSync({ _: ["sync"], yes: true, "dry-run": false, force: false, "skip-git-check": false, "no-color": false, help: false, version: false });
 
-    const modifiedPath = ".claude/agents/reviewer.md";
+    const modifiedPath = ".claude/agents/orchestrator.md";
     writeFileSync(modifiedPath, "LOCAL MODIFICATION");
 
     await runSync({ _: ["sync"], yes: true, "dry-run": false, force: true, "skip-git-check": false, "no-color": false, help: false, version: false });
 
-    // Local mod is now gone; reviewer.md matches catalog.
+    // Local mod is now gone; orchestrator.md matches catalog.
     expect(readFileSync(modifiedPath, "utf8")).not.toBe("LOCAL MODIFICATION");
-    expect(readFileSync(modifiedPath, "utf8")).toMatch(/Reviewer/);
+    expect(readFileSync(modifiedPath, "utf8").toLowerCase()).toContain("orchestrator");
   });
 });

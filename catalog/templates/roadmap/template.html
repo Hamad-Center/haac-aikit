@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{ONE_LINE_FEATURE_SUMMARY}}">
+<meta name="aikit-doc-type" content="roadmap">
+<style>
+:root {
+  --clay:     #D97757;
+  --slate:    #141413;
+  --ivory:    #FAF9F5;
+  --oat:      #E3DACC;
+  --olive:    #788C5D;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --white:    #FFFFFF;
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--gray-700);
+  line-height: 1.55;
+  padding: 56px 32px 120px;
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 1120px; margin: 0 auto; }
+
+/* ---------- header ---------- */
+header.page-head { margin-bottom: 48px; max-width: 820px; }
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-bottom: 12px;
+}
+h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--slate);
+  margin-bottom: 18px;
+  letter-spacing: -0.01em;
+}
+.prompt-box {
+  background: var(--gray-150);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 14.5px;
+  color: var(--gray-700);
+}
+.prompt-box .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ---------- section chrome ---------- */
+section { margin-bottom: 64px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; }
+.sec-head .num {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--oat);
+  color: var(--slate);
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+.sec-head h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 26px;
+  color: var(--slate);
+  letter-spacing: -0.01em;
+}
+.sec-intro {
+  font-size: 14.5px;
+  color: var(--gray-500);
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+
+/* ---------- summary strip ---------- */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 64px;
+}
+@media (max-width: 900px) { .summary { grid-template-columns: repeat(2, 1fr); } }
+.summary .cell {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.summary .k {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+.summary .v { font-size: 17px; color: var(--slate); font-weight: 600; }
+.summary .v.accent { color: var(--clay); }
+
+/* ---------- milestone timeline ---------- */
+.milestones { display: flex; flex-direction: column; gap: 0; }
+.milestone {
+  display: grid;
+  grid-template-columns: 120px 28px 1fr;
+  gap: 0 18px;
+  position: relative;
+}
+.milestone .when {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--gray-500);
+  padding-top: 4px;
+}
+.milestone .dot-col { display: flex; flex-direction: column; align-items: center; }
+.milestone .dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 3px solid var(--clay);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.milestone .dot.done { background: var(--olive); border-color: var(--olive); }
+.milestone .line { width: 2px; flex: 1; background: var(--gray-300); margin: 4px 0; }
+.milestone:last-child .line { display: none; }
+.milestone .body { padding-bottom: 36px; }
+.milestone .body h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--slate);
+  margin-bottom: 4px;
+}
+.milestone .body p { font-size: 14px; color: var(--gray-500); margin-bottom: 10px; max-width: 620px; }
+.milestone .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.milestone .tag {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--gray-150);
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  padding: 3px 8px;
+  color: var(--gray-700);
+}
+
+/* ---------- data flow diagram ---------- */
+.diagram {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 28px;
+  overflow-x: auto;
+}
+.diagram svg { display: block; min-width: 760px; }
+.diagram text { font-family: var(--mono); }
+.caption { font-size: 13px; color: var(--gray-500); margin-top: 12px; }
+
+/* ---------- mockups ---------- */
+.mocks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+@media (max-width: 900px) { .mocks { grid-template-columns: 1fr; } }
+.mock {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.mock .mock-label {
+  padding: 12px 18px;
+  border-bottom: 1.5px solid var(--gray-300);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  background: var(--gray-150);
+}
+.mock .mock-body { padding: 22px; }
+
+/* ---------- code panel ---------- */
+.code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+@media (max-width: 980px) { .code-grid { grid-template-columns: 1fr; } }
+.code-block { display: flex; flex-direction: column; gap: 10px; }
+.code-block .file-label { font-family: var(--mono); font-size: 12px; color: var(--gray-500); }
+.code {
+  background: var(--slate);
+  border-radius: 12px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  flex: 1;
+}
+.code pre {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: #E8E6DE;
+  white-space: pre;
+}
+.code .kw  { color: var(--clay); }
+.code .str { color: var(--olive); }
+.code .cm  { color: var(--gray-500); }
+.code .fn  { color: #C9B98A; }
+
+/* ---------- risk table ---------- */
+.risks {
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--white);
+}
+.risks .row {
+  display: grid;
+  grid-template-columns: 1.6fr 90px 1.6fr;
+  gap: 0;
+}
+@media (max-width: 780px) { .risks .row { grid-template-columns: 1fr; } }
+.risks .row + .row { border-top: 1.5px solid var(--gray-300); }
+.risks .cell { padding: 14px 18px; font-size: 13.5px; }
+.risks .cell + .cell { border-left: 1.5px solid var(--gray-300); }
+@media (max-width: 780px) { .risks .cell + .cell { border-left: none; border-top: 1px dashed var(--gray-300); } }
+.risks .head {
+  background: var(--gray-150);
+  font-weight: 600;
+  color: var(--slate);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sev {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.sev.high { background: #F3D9CC; color: #8A3B1E; }
+.sev.med  { background: var(--oat); color: var(--slate); }
+.sev.low  { background: #E4E9DC; color: #4B5C39; }
+
+/* ---------- open questions ---------- */
+.open-q { display: flex; flex-direction: column; gap: 14px; max-width: 820px; }
+.q {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-left: 4px solid var(--clay);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+.q .qt { font-weight: 600; font-size: 15px; color: var(--slate); margin-bottom: 4px; }
+.q .qd { font-size: 13.5px; color: var(--gray-500); }
+.q .owner { font-family: var(--mono); font-size: 11.5px; color: var(--gray-500); margin-top: 8px; }
+
+code { font-family: var(--mono); font-size: 0.9em; background: var(--gray-150); padding: 1px 5px; border-radius: 3px; }
+
+footer.provenance {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-300);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gray-500);
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-head">
+    <p class="eyebrow">Roadmap · {{PROJECT_OR_AREA}}</p>
+    <h1>{{FEATURE_TITLE}}</h1>
+    <div class="prompt-box">
+      <span class="label">Prompt</span>
+      {{ORIGINAL_USER_PROMPT}}
+    </div>
+  </header>
+
+  <!-- ============================================================= -->
+  <div class="summary" aria-label="At-a-glance">
+    <div class="cell"><div class="k">Effort</div><div class="v accent">{{EFFORT}}</div></div>
+    <div class="cell"><div class="k">Surfaces touched</div><div class="v">{{SURFACES}}</div></div>
+    <div class="cell"><div class="k">{{COUNT_LABEL}}</div><div class="v">{{COUNT_VALUE}}</div></div>
+    <div class="cell"><div class="k">Feature flag</div><div class="v">{{FLAG_NAME}}</div></div>
+  </div>
+
+  <!-- ============================================================= -->
+  <section aria-labelledby="milestones-h">
+    <div class="sec-head"><span class="num">01</span><h2 id="milestones-h">Milestones</h2></div>
+    <p class="sec-intro">{{MILESTONES_INTRO}}</p>
+
+    <div class="milestones">
+      <div class="milestone">
+        <div class="when">{{M1_WHEN}}</div>
+        <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+        <div class="body">
+          <h3>{{M1_TITLE}}</h3>
+          <p>{{M1_DESCRIPTION}}</p>
+          <div class="tags">
+            <span class="tag">{{M1_TAG_A}}</span>
+            <span class="tag">{{M1_TAG_B}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="milestone">
+        <div class="when">{{M2_WHEN}}</div>
+        <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+        <div class="body">
+          <h3>{{M2_TITLE}}</h3>
+          <p>{{M2_DESCRIPTION}}</p>
+          <div class="tags">
+            <span class="tag">{{M2_TAG_A}}</span>
+            <span class="tag">{{M2_TAG_B}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="milestone">
+        <div class="when">{{M3_WHEN}}</div>
+        <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+        <div class="body">
+          <h3>{{M3_TITLE}}</h3>
+          <p>{{M3_DESCRIPTION}}</p>
+          <div class="tags">
+            <span class="tag">{{M3_TAG_A}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="milestone">
+        <div class="when">{{M4_WHEN}}</div>
+        <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+        <div class="body">
+          <h3>{{M4_TITLE}}</h3>
+          <p>{{M4_DESCRIPTION}}</p>
+          <div class="tags">
+            <span class="tag">{{M4_TAG_A}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section aria-labelledby="dataflow-h">
+    <div class="sec-head"><span class="num">02</span><h2 id="dataflow-h">Data flow</h2></div>
+    <p class="sec-intro">{{DATAFLOW_INTRO}}</p>
+
+    <div class="diagram" role="img" aria-labelledby="diagram-title diagram-desc">
+      <svg viewBox="0 0 860 340" xmlns="http://www.w3.org/2000/svg">
+        <title id="diagram-title">{{DIAGRAM_TITLE}}</title>
+        <desc id="diagram-desc">{{DIAGRAM_DESC}}</desc>
+
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#87867F"/>
+          </marker>
+          <marker id="arrowClay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#D97757"/>
+          </marker>
+        </defs>
+
+        <!-- Boxes: customize labels, geometry to match the data flow.
+             Solid grey arrows = request path. Dashed clay arrows = realtime/async fan-out. -->
+        {{DIAGRAM_SVG_BODY}}
+      </svg>
+      <p class="caption">{{DIAGRAM_CAPTION}}</p>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section aria-labelledby="mockups-h">
+    <div class="sec-head"><span class="num">03</span><h2 id="mockups-h">Mockups</h2></div>
+    <p class="sec-intro">{{MOCKUPS_INTRO}}</p>
+
+    <div class="mocks">
+      <div class="mock">
+        <div class="mock-label">A · {{MOCK_A_LABEL}}</div>
+        <div class="mock-body">
+          {{MOCK_A_HTML}}
+        </div>
+      </div>
+      <div class="mock">
+        <div class="mock-label">B · {{MOCK_B_LABEL}}</div>
+        <div class="mock-body">
+          {{MOCK_B_HTML}}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section aria-labelledby="code-h">
+    <div class="sec-head"><span class="num">04</span><h2 id="code-h">Key code</h2></div>
+    <p class="sec-intro">{{CODE_INTRO}}</p>
+
+    <div class="code-grid">
+      <div class="code-block">
+        <div class="file-label">{{CODE_A_FILE_LABEL}}</div>
+        <div class="code"><pre>{{CODE_A_BODY}}</pre></div>
+      </div>
+      <div class="code-block">
+        <div class="file-label">{{CODE_B_FILE_LABEL}}</div>
+        <div class="code"><pre>{{CODE_B_BODY}}</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section aria-labelledby="risks-h">
+    <div class="sec-head"><span class="num">05</span><h2 id="risks-h">Risks &amp; mitigations</h2></div>
+    <div class="risks" role="table" aria-label="Risks">
+      <div class="row" role="row">
+        <div class="cell head" role="columnheader">Risk</div>
+        <div class="cell head" role="columnheader">Sev</div>
+        <div class="cell head" role="columnheader">Mitigation</div>
+      </div>
+      <div class="row" role="row">
+        <div class="cell" role="cell">{{RISK_1_DESC}}</div>
+        <div class="cell" role="cell"><span class="sev {{RISK_1_SEV_CLASS}}">{{RISK_1_SEV}}</span></div>
+        <div class="cell" role="cell">{{RISK_1_MITIGATION}}</div>
+      </div>
+      <div class="row" role="row">
+        <div class="cell" role="cell">{{RISK_2_DESC}}</div>
+        <div class="cell" role="cell"><span class="sev {{RISK_2_SEV_CLASS}}">{{RISK_2_SEV}}</span></div>
+        <div class="cell" role="cell">{{RISK_2_MITIGATION}}</div>
+      </div>
+      <div class="row" role="row">
+        <div class="cell" role="cell">{{RISK_3_DESC}}</div>
+        <div class="cell" role="cell"><span class="sev {{RISK_3_SEV_CLASS}}">{{RISK_3_SEV}}</span></div>
+        <div class="cell" role="cell">{{RISK_3_MITIGATION}}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section aria-labelledby="open-q-h">
+    <div class="sec-head"><span class="num">06</span><h2 id="open-q-h">Open questions</h2></div>
+    <div class="open-q">
+      <div class="q">
+        <div class="qt">{{Q1_TITLE}}</div>
+        <div class="qd">{{Q1_DESCRIPTION}}</div>
+        <div class="owner">{{Q1_OWNER}}</div>
+      </div>
+      <div class="q">
+        <div class="qt">{{Q2_TITLE}}</div>
+        <div class="qd">{{Q2_DESCRIPTION}}</div>
+        <div class="owner">{{Q2_OWNER}}</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="provenance">
+    Sources: {{SOURCES}} — generated {{ISO_TIMESTAMP}}
+  </footer>
+
+</div>
+</body>
+</html>

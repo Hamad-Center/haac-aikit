@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pre-publish cleanup — how aggressively?</title>
+<meta name="description" content="Decide how much of the haac-aikit catalog to trim before publishing the HTML-skills release.">
+<meta name="aikit-doc-type" content="decision">
+<style>
+:root {
+  --clay:     #D97757;
+  --slate:    #141413;
+  --ivory:    #FAF9F5;
+  --oat:      #E3DACC;
+  --olive:    #788C5D;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --white:    #FFFFFF;
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--ivory);
+  color: var(--slate);
+  font-family: var(--sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 1120px; margin: 0 auto; padding: 48px 24px 96px; }
+
+h1, h2, h3 { font-family: var(--serif); margin: 0 0 8px; font-weight: 500; }
+h1 { font-size: clamp(28px, 4vw, 38px); letter-spacing: -0.01em; }
+h2 { font-size: clamp(20px, 2.4vw, 26px); margin-top: 56px; }
+h3 { font-size: 17px; margin: 0 0 6px; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-500);
+  margin-bottom: 12px;
+}
+
+/* ---------- decision callout ---------- */
+.decision-needed {
+  background: var(--white);
+  border: 1px solid var(--gray-300);
+  border-left: 4px solid var(--clay);
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin: 24px 0 36px;
+  box-shadow: 0 1px 3px rgba(20, 20, 19, 0.06);
+}
+.decision-needed .question {
+  font-family: var(--serif);
+  font-size: 22px;
+  margin: 6px 0 14px;
+}
+.option-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.option-chips .chip {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--oat);
+  color: var(--slate);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.option-chips .chip.recommended { background: var(--olive); color: var(--white); }
+
+/* ---------- summary strip ---------- */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 12px;
+}
+@media (max-width: 900px) { .summary { grid-template-columns: repeat(2, 1fr); } }
+.summary .cell {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.summary .k {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+.summary .v { font-size: 17px; color: var(--slate); font-weight: 600; }
+.summary .v.accent { color: var(--clay); }
+.summary .v.olive { color: var(--olive); }
+
+/* ---------- redundancy heat-map table ---------- */
+table.heat {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 14px;
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  overflow: hidden;
+}
+table.heat th,
+table.heat td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--gray-300); }
+table.heat tr:last-child td { border-bottom: none; }
+table.heat th {
+  background: var(--gray-150);
+  font-weight: 600;
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--slate);
+}
+table.heat td.skill { font-family: var(--mono); font-size: 13px; }
+table.heat td.lines { font-family: var(--mono); color: var(--gray-700); }
+table.heat td.lines.high { color: var(--clay); font-weight: 600; }
+
+.badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.badge.cut  { background: #F3D9CC; color: #8A3B1E; }
+.badge.keep { background: #E4E9DC; color: #4B5C39; }
+.badge.opt  { background: var(--oat); color: var(--slate); }
+
+/* ---------- option cards ---------- */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.card {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.card.recommended { border-color: var(--olive); border-width: 2px; }
+.card .effort {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+.card .summary-line { color: var(--gray-700); font-size: 13.5px; margin: 4px 0 14px; }
+.card ul { list-style: none; padding: 0; margin: 8px 0; font-size: 13.5px; }
+.card li { padding-left: 18px; position: relative; margin: 5px 0; }
+.card li.pro::before,
+.card li.con::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  position: absolute; left: 2px; top: 8px;
+}
+.card li.pro::before { background: var(--olive); }
+.card li.con::before { background: var(--clay); }
+.card .footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px dashed var(--gray-300);
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+/* ---------- comparison table ---------- */
+table.compare {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13.5px;
+}
+table.compare th,
+table.compare td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--gray-300); vertical-align: top; }
+table.compare th { background: var(--gray-150); font-weight: 600; font-family: var(--mono); font-size: 11px; text-transform: uppercase; }
+table.compare td.dim { font-family: var(--mono); color: var(--gray-500); white-space: nowrap; }
+
+/* ---------- recommendation callout ---------- */
+.recommendation {
+  background: var(--white);
+  border: 1px solid var(--olive);
+  border-left: 4px solid var(--olive);
+  border-radius: 6px;
+  padding: 22px 26px;
+  margin-top: 36px;
+}
+.recommendation .pick {
+  font-family: var(--serif);
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+.recommendation .reason { color: var(--gray-700); font-size: 14.5px; }
+.recommendation .flip {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--gray-500);
+  font-style: italic;
+}
+
+code { font-family: var(--mono); font-size: 0.9em; background: var(--gray-150); padding: 1px 5px; border-radius: 3px; }
+
+footer.provenance {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-300);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gray-500);
+}
+</style>
+</head>
+<body>
+
+<main>
+
+<header>
+  <p class="eyebrow">Decision · 2026-05-14</p>
+  <h1>Pre-publish cleanup — how aggressively?</h1>
+</header>
+
+<aside class="decision-needed" aria-labelledby="dq">
+  <p class="eyebrow">Decision needed</p>
+  <p id="dq" class="question">Before publishing the HTML-skills release, how much of the catalog do we trim?</p>
+  <div class="option-chips" role="list">
+    <span class="chip" role="listitem">A — Bare minimum</span>
+    <span class="chip recommended" role="listitem">B — Minimum + token trim ★</span>
+    <span class="chip" role="listitem">C — Aggressive</span>
+    <span class="chip" role="listitem">D — Ship as-is</span>
+  </div>
+</aside>
+
+<section aria-labelledby="numbers-h">
+  <h2 id="numbers-h">By the numbers</h2>
+  <div class="summary" style="margin-top: 16px;">
+    <div class="cell"><div class="k">Tier1 skill lines today</div><div class="v accent">~1,000</div></div>
+    <div class="cell"><div class="k">Always-on token cost</div><div class="v">~12–15k</div></div>
+    <div class="cell"><div class="k">Stale pointers in AGENTS.md</div><div class="v accent">3</div></div>
+    <div class="cell"><div class="k">Effort for option B</div><div class="v olive">~20 min</div></div>
+  </div>
+</section>
+
+<section aria-labelledby="heat-h">
+  <h2 id="heat-h">Redundancy heat map — tier1 skills</h2>
+  <p style="color: var(--gray-500); margin: 8px 0 12px; font-size: 14px;">
+    Each tier1 skill is paid context for every user, every session, whether or not they ever invoke it.
+    The skills below are sorted from "most worth demoting" to "keep tier1".
+  </p>
+  <table class="heat">
+    <thead>
+      <tr>
+        <th>Skill</th>
+        <th>Lines</th>
+        <th>Fires when</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="skill">performance-profiling</td>
+        <td class="lines high">98</td>
+        <td>Optimizing slow code — specialist mode</td>
+        <td><span class="badge cut">demote → tier2</span></td>
+      </tr>
+      <tr>
+        <td class="skill">incident-response</td>
+        <td class="lines high">78</td>
+        <td>Production outage — rare, one-off</td>
+        <td><span class="badge cut">demote → tier2</span></td>
+      </tr>
+      <tr>
+        <td class="skill">api-design</td>
+        <td class="lines">64</td>
+        <td>Designing a public API — one-shot per project</td>
+        <td><span class="badge cut">demote → tier2</span></td>
+      </tr>
+      <tr>
+        <td class="skill">software-architect</td>
+        <td class="lines">42</td>
+        <td>Architecture decisions — one-shot per project</td>
+        <td><span class="badge cut">demote → tier2</span></td>
+      </tr>
+      <tr>
+        <td class="skill">directions</td>
+        <td class="lines">72</td>
+        <td>User explicitly runs <code>/directions</code></td>
+        <td><span class="badge opt">tier2 candidate</span></td>
+      </tr>
+      <tr>
+        <td class="skill">roadmap</td>
+        <td class="lines">71</td>
+        <td>User explicitly runs <code>/roadmap</code></td>
+        <td><span class="badge opt">tier2 candidate</span></td>
+      </tr>
+      <tr>
+        <td class="skill">docs</td>
+        <td class="lines">81</td>
+        <td>Documentation drift — fires across many tasks</td>
+        <td><span class="badge keep">keep tier1</span></td>
+      </tr>
+      <tr>
+        <td class="skill">brainstorming · systematic-debugging · writing-plans · executing-plans · test-driven-development · using-git-worktrees · writing-commits · verification-before-completion · codebase-exploration · requesting-code-review · decide</td>
+        <td class="lines">~520</td>
+        <td>Core engineering loop — fire frequently</td>
+        <td><span class="badge keep">keep tier1</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section aria-labelledby="options-h">
+  <h2 id="options-h">Options</h2>
+  <div class="cards">
+
+    <article class="card">
+      <span class="effort">~5 min · low risk</span>
+      <h3>A — Bare minimum</h3>
+      <p class="summary-line">Fix the 3 stale pointers in <code>AGENTS.md.tmpl</code> only. Ship the rest as-is.</p>
+      <ul aria-label="Pros and cons of option A">
+        <li class="pro">Tiny diff, easy to review.</li>
+        <li class="pro">Removes the only thing that's actually broken.</li>
+        <li class="con">Tier1 stays at ~1,000 lines — users pay for niche skills they may never use.</li>
+        <li class="con">Misses a cheap win.</li>
+      </ul>
+      <div class="footer">Files changed: 1</div>
+    </article>
+
+    <article class="card recommended" aria-label="Recommended option">
+      <span class="effort">~20 min · low risk</span>
+      <h3>B — Minimum + token trim <span aria-hidden="true">★</span></h3>
+      <p class="summary-line">Fix the stale pointers <em>and</em> demote 4 rarely-firing skills (<code>performance-profiling</code>, <code>incident-response</code>, <code>api-design</code>, <code>software-architect</code>) from tier1 → tier2.</p>
+      <ul aria-label="Pros and cons of option B">
+        <li class="pro">Cuts ~282 lines (~3.5k tokens) of always-on context.</li>
+        <li class="pro">Zero UX loss — those 4 skills are explicit-only by description anyway.</li>
+        <li class="pro">Users who want them run <code>aikit add &lt;name&gt;</code>.</li>
+        <li class="con">Slightly less out-of-box "feel" — they have to opt in.</li>
+      </ul>
+      <div class="footer">Files changed: ~6 (4 moves + catalog-check + AGENTS.md.tmpl)</div>
+    </article>
+
+    <article class="card">
+      <span class="effort">~30 min · medium risk</span>
+      <h3>C — Aggressive</h3>
+      <p class="summary-line">Everything in B, plus demote the brand-new <code>/directions</code> and <code>/roadmap</code> to tier2.</p>
+      <ul aria-label="Pros and cons of option C">
+        <li class="pro">Cuts another ~143 lines (~1.7k tokens). Tier1 down to ~575 lines.</li>
+        <li class="pro">Matches <code>/decide</code>'s original posture (opt-in by design).</li>
+        <li class="con">Contradicts your earlier ask ("should be always available").</li>
+        <li class="con">Behavior is unchanged — they're opt-in by description either way.</li>
+      </ul>
+      <div class="footer">Files changed: ~8</div>
+    </article>
+
+    <article class="card">
+      <span class="effort">0 min · highest risk</span>
+      <h3>D — Ship as-is</h3>
+      <p class="summary-line">Publish now. Audit again after first user feedback.</p>
+      <ul aria-label="Pros and cons of option D">
+        <li class="pro">Fastest path to publish.</li>
+        <li class="con">Users get an AGENTS.md with 3 dead pointers — first-impression bug.</li>
+        <li class="con">Carrying ~282 lines of low-value always-on context until first refactor.</li>
+      </ul>
+      <div class="footer">Files changed: 0</div>
+    </article>
+
+  </div>
+</section>
+
+<section aria-labelledby="compare-h">
+  <h2 id="compare-h">Side by side</h2>
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th>A — Bare min</th>
+        <th>B — Minimum + trim ★</th>
+        <th>C — Aggressive</th>
+        <th>D — Ship as-is</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="dim">Effort</td>
+        <td>5 min</td>
+        <td>20 min</td>
+        <td>30 min</td>
+        <td>0 min</td>
+      </tr>
+      <tr>
+        <td class="dim">Tier1 size after</td>
+        <td>~1,000 lines</td>
+        <td>~720 lines (-28%)</td>
+        <td>~575 lines (-42%)</td>
+        <td>~1,000 lines</td>
+      </tr>
+      <tr>
+        <td class="dim">Stale pointers shipped</td>
+        <td>0</td>
+        <td>0</td>
+        <td>0</td>
+        <td>3</td>
+      </tr>
+      <tr>
+        <td class="dim">UX regression risk</td>
+        <td>None</td>
+        <td>None</td>
+        <td>Low — same trigger behavior, just opt-in install</td>
+        <td>None</td>
+      </tr>
+      <tr>
+        <td class="dim">Reversible if wrong?</td>
+        <td>Trivially</td>
+        <td>Trivially — <code>git mv</code> back</td>
+        <td>Trivially</td>
+        <td>n/a</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<aside class="recommendation" aria-labelledby="rec-h">
+  <p class="eyebrow" id="rec-h">Recommendation</p>
+  <p class="pick">★ Pick B — Minimum + token trim</p>
+  <p class="reason">
+    It's the only option that fixes the broken pointers <em>and</em> earns a real token saving with no UX regression. The four
+    demoted skills already say "use when X" in their descriptions — they were never auto-firing for general work. Tier2 just
+    makes that explicit and stops charging context for skills nobody is reading.
+  </p>
+  <p class="flip">
+    <strong>Flip to A if</strong> you want to ship today and trust users to opt-in to niche skills via <code>aikit add</code>.
+    <strong>Flip to C if</strong> you've changed your mind on the "always available" ask for <code>/directions</code> and
+    <code>/roadmap</code> after seeing they don't auto-fire.
+  </p>
+</aside>
+
+<footer class="provenance">
+  Sources: pre-publish catalog audit — <code>catalog/skills/tier1/</code>, <code>catalog/rules/AGENTS.md.tmpl</code>, <code>scripts/catalog-check.js</code> · generated 2026-05-14
+</footer>
+
+</main>
+
+</body>
+</html>

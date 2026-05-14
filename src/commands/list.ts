@@ -83,22 +83,30 @@ function listClaudeRules(): CatalogItem[] {
 }
 
 function listHtmlArtifactTemplates(): CatalogItem[] {
-  const catalogDir = join(CATALOG_ROOT, "templates", "html-artifacts");
+  // Each child of catalog/templates/ is one pack (docs, decide, directions,
+  // roadmap). A pack is "installed" when its destination directory exists with
+  // at least one file synced — `aikit add --html` and `aikit sync` both
+  // populate these.
+  const catalogDir = join(CATALOG_ROOT, "templates");
   if (!existsSync(catalogDir)) return [];
 
-  const installedDir = ".aikit/templates/html-artifacts";
-  const installedFiles = new Set(
-    existsSync(installedDir)
-      ? readdirSync(installedDir).filter((f) => f.endsWith(".html") && f !== "index.html")
-      : []
-  );
-
-  // Surface only the numbered template files (skip index.html which is the
-  // gallery landing page, not a scaffoldable template).
   return readdirSync(catalogDir)
-    .filter((f) => f.endsWith(".html") && f !== "index.html")
+    .filter((entry) => {
+      const full = join(catalogDir, entry);
+      try {
+        return readdirSync(full).some((f) => /\.(html|json|md)$/.test(f));
+      } catch {
+        return false;
+      }
+    })
     .sort()
-    .map((f) => ({ name: stripExtension(f, [".html"]), installed: installedFiles.has(f) }));
+    .map((pack) => {
+      const installedDir = join(".aikit/templates", pack);
+      const installed =
+        existsSync(installedDir) &&
+        readdirSync(installedDir).some((f) => /\.(html|json|md)$/.test(f));
+      return { name: pack, installed };
+    });
 }
 
 function stripExtension(filename: string, extensions: string[]): string {

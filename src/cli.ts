@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import mri from "mri";
 import { isInteractive } from "./detect/isCI.js";
-import { checkAndNotify } from "./notify.js";
 import type { CliArgs } from "./types.js";
 
 // Version is substituted at build time by tsup's `define` from package.json,
@@ -10,7 +9,7 @@ import type { CliArgs } from "./types.js";
 const VERSION = process.env.HAAC_AIKIT_VERSION ?? "dev";
 
 const HELP = `
-haac-aikit — the batteries-included AI-agentic-coding kit
+haac-aikit — the batteries-included AI-coding kit
 
 USAGE
   npx haac-aikit [command] [flags]
@@ -22,12 +21,11 @@ COMMANDS
   update            Pull latest templates; show diff; prompt before writing
   diff              Show drift between current state and a fresh generation
   add <item>        Add a single skill, command, agent, or hook
+  add --html        Add the HTML-artifact bundle (docs/decide/directions/roadmap skills + templates)
   list              Show installed items + available catalog
   doctor            Sanity-check: schema, triggers, broken links
   doctor --rules    Rule observability report — which rules fire, are followed, are dead
   report            Markdown / JSON rule-adherence summary (for PR comments / CI)
-  learn             Mine recent PR review comments for repeated corrections; propose rules
-  whatsnew          Show release notes for the current version (--all for full history)
 
 FLAGS
   --yes, -y           Accept all defaults
@@ -37,23 +35,18 @@ FLAGS
   --no-color          Disable ANSI colours
   --config=<path>     Use a specific .aikitrc.json location
   --tools=<list>      Comma-separated tool list (claude,cursor,copilot,...)
-  --scope=<scope>     minimal | standard | everything  (--preset is an alias)
   --rules             (with doctor)  Show rule-observability buckets
   --format=<fmt>      (with report / doctor --rules)  markdown | json
   --since=<date>      (with report)  Restrict events to after this ISO date
-  --limit=<n>         (with learn)   How many merged PRs to scan (default 30)
-  --all               (with whatsnew) Show release notes for all versions
-  --no-update-check   Skip the once-per-day npm registry check for this invocation
-                      (also honored: AIKIT_NO_UPDATE_CHECK=1 env var)
   --help, -h          Show this help
   --version, -v       Show version
 `;
 
 async function main(): Promise<void> {
   const argv = mri<CliArgs>(process.argv.slice(2), {
-    boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules", "all", "no-update-check"],
-    string: ["config", "tools", "preset", "scope", "format", "since", "limit"],
-    alias: { y: "yes", h: "help", v: "version", scope: "preset" },
+    boolean: ["yes", "dry-run", "force", "skip-git-check", "no-color", "help", "version", "rules", "html"],
+    string: ["config", "tools", "format", "since"],
+    alias: { y: "yes", h: "help", v: "version" },
     default: {
       yes: false,
       "dry-run": false,
@@ -63,8 +56,7 @@ async function main(): Promise<void> {
       help: false,
       version: false,
       rules: false,
-      all: false,
-      "no-update-check": false,
+      html: false,
     },
   });
 
@@ -77,10 +69,6 @@ async function main(): Promise<void> {
     process.stdout.write(HELP + "\n");
     return;
   }
-
-  // Update check runs before the command dispatch. The function never throws
-  // past its own try/catch, so a network failure can't break the CLI.
-  await checkAndNotify(argv, VERSION);
 
   const [command = "init"] = argv._;
 
@@ -127,16 +115,6 @@ async function main(): Promise<void> {
     case "report": {
       const { runReport } = await import("./commands/report.js");
       await runReport(argv);
-      break;
-    }
-    case "learn": {
-      const { runLearn } = await import("./commands/learn.js");
-      await runLearn(argv);
-      break;
-    }
-    case "whatsnew": {
-      const { runWhatsNew } = await import("./commands/whatsnew.js");
-      await runWhatsNew(argv);
       break;
     }
     default:

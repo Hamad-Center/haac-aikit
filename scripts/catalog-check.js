@@ -73,11 +73,14 @@ checkLivingDocsTemplates();
 console.log("catalog-check: all checks passed");
 
 function checkLivingDocsTemplates() {
-  // Replaces the old html-artifacts manifest check. /docs and /decide each
-  // ship a single template; we just confirm the files exist.
+  // The HTML-artifact skills (/docs, /decide, /directions, /roadmap) each ship
+  // a single template; we confirm the files exist. All four live in tier1 so
+  // they're always available; the `aikit add --html` group installs only this set.
   const requiredTemplates = [
     join(repoRoot, "catalog", "templates", "docs", "starter.html"),
     join(repoRoot, "catalog", "templates", "decide", "template.html"),
+    join(repoRoot, "catalog", "templates", "directions", "template.html"),
+    join(repoRoot, "catalog", "templates", "roadmap", "template.html"),
   ];
   for (const path of requiredTemplates) {
     if (!existsSync(path)) {
@@ -85,12 +88,16 @@ function checkLivingDocsTemplates() {
     }
   }
 
-  // Confirm /docs and /decide skill + command files exist alongside the templates.
+  // Confirm matching skill + command files exist alongside the templates.
   const requiredSkillsAndCommands = [
     join(repoRoot, "catalog", "skills", "tier1", "docs.md"),
-    join(repoRoot, "catalog", "skills", "tier2", "decide.md"),
+    join(repoRoot, "catalog", "skills", "tier1", "decide.md"),
+    join(repoRoot, "catalog", "skills", "tier1", "directions.md"),
+    join(repoRoot, "catalog", "skills", "tier1", "roadmap.md"),
     join(repoRoot, "catalog", "commands", "docs.md"),
     join(repoRoot, "catalog", "commands", "decide.md"),
+    join(repoRoot, "catalog", "commands", "directions.md"),
+    join(repoRoot, "catalog", "commands", "roadmap.md"),
   ];
   for (const path of requiredSkillsAndCommands) {
     if (!existsSync(path)) {

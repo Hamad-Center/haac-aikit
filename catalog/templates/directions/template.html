@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{ONE_LINE_BRIEF}}">
+<meta name="aikit-doc-type" content="directions">
+<style>
+:root {
+  --clay:     #D97757;
+  --slate:    #141413;
+  --ivory:    #FAF9F5;
+  --oat:      #E3DACC;
+  --olive:    #788C5D;
+  --gray-150: #F0EEE6;
+  --gray-300: #D1CFC5;
+  --gray-500: #87867F;
+  --gray-700: #3D3D3A;
+  --white:    #FFFFFF;
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--gray-700);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 96px;
+}
+
+/* ---------- sticky toolbar ---------- */
+.toolbar {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--ivory);
+  border-bottom: 1.5px solid var(--gray-300);
+  padding: 14px 32px;
+  display: flex; align-items: center; gap: 18px;
+  font-size: 13px;
+}
+.toolbar .title {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--gray-500);
+  margin-right: auto;
+}
+.toolbar .field { display: flex; align-items: center; gap: 10px; }
+.toolbar .field > span { color: var(--gray-700); font-weight: 500; }
+.seg {
+  display: inline-flex;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--white);
+}
+.seg label {
+  padding: 6px 14px; cursor: pointer;
+  font-size: 13px; color: var(--gray-700);
+  user-select: none;
+}
+.seg label + label { border-left: 1.5px solid var(--gray-300); }
+.seg input { display: none; }
+.seg label:has(input:checked) { background: var(--oat); }
+
+/* ---------- page header ---------- */
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 48px 32px 0;
+}
+header.page-head { max-width: 720px; margin-bottom: 40px; }
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-bottom: 12px;
+}
+h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--slate);
+  margin-bottom: 18px;
+  letter-spacing: -0.01em;
+}
+.prompt-box {
+  background: var(--gray-150);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 14.5px;
+}
+.prompt-box .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ---------- artboard grid ---------- */
+.board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+@media (max-width: 960px) { .board { grid-template-columns: 1fr; } }
+
+.artboard {
+  background: var(--white);
+  border: 1.5px solid var(--gray-300);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+}
+.tag {
+  position: absolute;
+  top: 14px; left: 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  background: var(--oat);
+  color: var(--slate);
+  padding: 4px 10px;
+  border-radius: 8px;
+  z-index: 2;
+}
+.stage {
+  height: 280px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-300);
+  background: var(--ivory);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  transition: background 0.15s, border-color 0.15s;
+  overflow: hidden;
+}
+.stage.dark { background: var(--slate); border-color: var(--slate); }
+
+.rationale {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--gray-500);
+  line-height: 1.5;
+}
+
+/* Theme tokens that flip when .stage.dark is present.
+   Variants reference --fg / --muted / --line / --panel
+   so the same markup re-themes on dark stages. */
+.stage      { --fg: var(--slate); --muted: var(--gray-500); --line: var(--gray-300); --panel: var(--white); }
+.stage.dark { --fg: #F0EEE6;      --muted: #9C9A93;         --line: #3D3D3A;         --panel: #1F1E1B; }
+
+/* ----- Per-variant styles ----- */
+/* Add scoped blocks here. Example pattern:
+
+.var-a { text-align: center; max-width: 300px; }
+.var-a h3 { font-family: var(--serif); font-size: 19px; color: var(--fg); margin-bottom: 6px; }
+.var-a p  { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+
+   One block per variant — DO NOT share class names across variants.
+*/
+
+a { color: var(--clay); }
+a:focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; border-radius: 2px; }
+code { font-family: var(--mono); font-size: 0.9em; background: var(--gray-150); padding: 1px 5px; border-radius: 3px; }
+
+footer.provenance {
+  max-width: 1240px;
+  margin: 64px auto 0;
+  padding: 16px 32px 0;
+  border-top: 1px solid var(--gray-300);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gray-500);
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar" role="toolbar" aria-label="Stage controls">
+  <div class="title">{{PROJECT_NAME}} · design exploration</div>
+  <div class="field">
+    <span>Background:</span>
+    <div class="seg" id="bg-seg">
+      <label><input type="radio" name="bg" value="light" checked><span>Light</span></label>
+      <label><input type="radio" name="bg" value="dark"><span>Dark</span></label>
+    </div>
+  </div>
+</div>
+
+<main class="page">
+
+  <header class="page-head">
+    <p class="eyebrow">Directions · {{SURFACE_NAME}}</p>
+    <h1>{{H1_HEADLINE}}</h1>
+    <div class="prompt-box">
+      <span class="label">Prompt</span>
+      {{ORIGINAL_USER_PROMPT}}
+    </div>
+  </header>
+
+  <section class="board" aria-label="Design directions">
+
+    <!-- ================= A — {{VARIANT_A_NAME}} ================= -->
+    <article class="artboard">
+      <span class="tag">A — {{VARIANT_A_NAME}}</span>
+      <div class="stage">
+        <!-- Render variant A here. Real HTML/CSS, not a description.
+             Scope all variant-A classes under .var-a in the <style> block. -->
+        {{VARIANT_A_LIVE_HTML}}
+      </div>
+      <p class="rationale">{{VARIANT_A_RATIONALE}}</p>
+    </article>
+
+    <!-- ================= B — {{VARIANT_B_NAME}} ================= -->
+    <article class="artboard">
+      <span class="tag">B — {{VARIANT_B_NAME}}</span>
+      <div class="stage">
+        {{VARIANT_B_LIVE_HTML}}
+      </div>
+      <p class="rationale">{{VARIANT_B_RATIONALE}}</p>
+    </article>
+
+    <!-- ================= C — {{VARIANT_C_NAME}} ================= -->
+    <article class="artboard">
+      <span class="tag">C — {{VARIANT_C_NAME}}</span>
+      <div class="stage">
+        {{VARIANT_C_LIVE_HTML}}
+      </div>
+      <p class="rationale">{{VARIANT_C_RATIONALE}}</p>
+    </article>
+
+    <!-- ================= D — {{VARIANT_D_NAME}} (optional — delete the whole article if only 3) ================= -->
+    <article class="artboard">
+      <span class="tag">D — {{VARIANT_D_NAME}}</span>
+      <div class="stage">
+        {{VARIANT_D_LIVE_HTML}}
+      </div>
+      <p class="rationale">{{VARIANT_D_RATIONALE}}</p>
+    </article>
+
+  </section>
+
+  <aside class="pick-guidance" style="margin-top: 48px; max-width: 720px; font-size: 14px; color: var(--gray-700);">
+    <p class="eyebrow">Pick guidance</p>
+    <p>{{PICK_GUIDANCE}}</p>
+  </aside>
+
+</main>
+
+<footer class="provenance">
+  Sources: {{SOURCES}} — generated {{ISO_TIMESTAMP}}
+</footer>
+
+<script>
+  const stages = document.querySelectorAll(".stage");
+  document.getElementById("bg-seg").addEventListener("change", (e) => {
+    const dark = e.target.value === "dark";
+    stages.forEach((s) => s.classList.toggle("dark", dark));
+  });
+</script>
+
+</body>
+</html>

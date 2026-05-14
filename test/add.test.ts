@@ -13,9 +13,7 @@ const baseConfig: AikitConfig = {
   projectName: "demo",
   projectDescription: "",
   tools: ["claude"],
-  scope: "standard",
-  shape: [],
-  integrations: { mcp: false, hooks: false, commands: false, subagents: false, ci: false, husky: false, devcontainer: false, plugin: false, otel: false },
+  integrations: { mcp: false, hooks: false, commands: false, subagents: false, ci: false },
   skills: { tier1: "all", tier2: "all", tier3: [] },
   canonical: "AGENTS.md",
 };
@@ -41,30 +39,29 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("aikit add — config persistence (regression: pre-0.5 didn't update config)", () => {
-  it("adds the matching shape to config.shape when an agent is installed", async () => {
-    writeConfig(baseConfig);
+describe("aikit add — config persistence", () => {
+  it("installs a tier2 agent and adds it to agents.tier2 when tier2 isn't 'all'", async () => {
+    writeConfig({
+      ...baseConfig,
+      agents: { tier1: "all", tier2: [], tier3: [] },
+    });
     await runAdd({ _: ["add", "backend"] } as never);
 
     const after = readWrittenConfig();
-    expect(after.shape).toContain("backend");
+    expect(after.agents?.tier2).toContain("backend");
     expect(existsSync(".claude/agents/backend.md")).toBe(true);
   });
 
-  it("adds 'web' shape when frontend agent is installed", async () => {
-    writeConfig(baseConfig);
-    await runAdd({ _: ["add", "frontend"] } as never);
-
-    expect(readWrittenConfig().shape).toContain("web");
-  });
-
-  it("is idempotent — adding the same agent twice doesn't duplicate the shape", async () => {
-    writeConfig(baseConfig);
+  it("is idempotent — adding the same agent twice doesn't duplicate the entry", async () => {
+    writeConfig({
+      ...baseConfig,
+      agents: { tier1: "all", tier2: [], tier3: [] },
+    });
     await runAdd({ _: ["add", "backend"] } as never);
     await runAdd({ _: ["add", "backend"], force: true } as never);
 
-    const shape = readWrittenConfig().shape;
-    expect(shape.filter((s) => s === "backend")).toHaveLength(1);
+    const tier2 = readWrittenConfig().agents?.tier2;
+    expect(Array.isArray(tier2) && tier2.filter((a) => a === "backend")).toHaveLength(1);
   });
 
   it("doesn't touch config when adding tier1/tier2 skills (already covered by 'all')", async () => {
@@ -82,5 +79,51 @@ describe("aikit add — config persistence (regression: pre-0.5 didn't update co
 
     expect(readWrittenConfig().integrations.hooks).toBe(true);
     expect(existsSync(".claude/hooks/block-dangerous-bash.sh")).toBe(true);
+  });
+});
+
+describe("aikit add --html — HTML-artifact bundle", () => {
+  const expectedSkills = ["docs", "decide", "directions", "roadmap"];
+  const expectedTemplates = [
+    "docs/starter.html",
+    "decide/template.html",
+    "directions/template.html",
+    "roadmap/template.html",
+  ];
+
+  it("installs all four skills, commands, and template packs in one shot", async () => {
+    writeConfig(baseConfig);
+    await runAdd({ _: ["add"], html: true } as never);
+
+    for (const name of expectedSkills) {
+      expect(existsSync(`.claude/skills/${name}.md`), `skill ${name}`).toBe(true);
+      expect(existsSync(`.claude/commands/${name}.md`), `command /${name}`).toBe(true);
+    }
+    for (const path of expectedTemplates) {
+      expect(existsSync(`.aikit/templates/${path}`), `template ${path}`).toBe(true);
+    }
+  });
+
+  it("is idempotent — a second run doesn't error and writes nothing new", async () => {
+    writeConfig(baseConfig);
+    await runAdd({ _: ["add"], html: true } as never);
+    await runAdd({ _: ["add"], html: true } as never);
+
+    // Files still exist and weren't deleted.
+    for (const name of expectedSkills) {
+      expect(existsSync(`.claude/skills/${name}.md`)).toBe(true);
+    }
+  });
+
+  it("respects --dry-run by listing files but not writing them", async () => {
+    writeConfig(baseConfig);
+    await runAdd({ _: ["add"], html: true, "dry-run": true } as never);
+
+    for (const name of expectedSkills) {
+      expect(existsSync(`.claude/skills/${name}.md`), `skill ${name} (dry-run)`).toBe(false);
+    }
+    for (const path of expectedTemplates) {
+      expect(existsSync(`.aikit/templates/${path}`), `template ${path} (dry-run)`).toBe(false);
+    }
   });
 });

@@ -39,7 +39,6 @@ export function loadCatalog() {
     geminiMd: () => read("rules/GEMINI.md.shim"),
     mcpJson: () => read("mcp/mcp.json"),
     settingsJson: () => read("settings/settings.json"),
-    claudeMdReference: () => read("docs/claude-md-reference.md"),
     aikitRulesJson: () => read("rules/aikit-rules.json"),
   };
 }

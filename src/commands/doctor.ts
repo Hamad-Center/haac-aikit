@@ -49,7 +49,7 @@ export async function runDoctor(argv: CliArgs): Promise<void> {
     printFindings(findings);
     return;
   }
-  findings.push({ level: "ok", check: ".aikitrc.json", message: `version ${config.version}, scope: ${config.scope}` });
+  findings.push({ level: "ok", check: ".aikitrc.json", message: `version ${config.version}` });
 
   // 2. AGENTS.md exists and has markers
   if (existsSync("AGENTS.md")) {
@@ -97,7 +97,7 @@ export async function runDoctor(argv: CliArgs): Promise<void> {
   }
 
   // 5. Skills count
-  if (config.scope !== "minimal") {
+  {
     const skillsDir = ".claude/skills";
     if (existsSync(skillsDir)) {
       const count = readdirSync(skillsDir).filter((f) => f.endsWith(".md")).length;
@@ -129,11 +129,10 @@ export async function runDoctor(argv: CliArgs): Promise<void> {
     }
   }
 
-  // 6b. 0.4.0 artefacts (Claude + scope ≥ standard)
-  if (config.tools.includes("claude") && config.scope !== "minimal") {
+  // 6b. Claude-only artefacts
+  if (config.tools.includes("claude")) {
     for (const path of [
       ".claude/aikit-rules.json",
-      "docs/claude-md-reference.md",
       ".claude/rules/example.md",
     ]) {
       if (existsSync(path)) {

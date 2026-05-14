@@ -3,7 +3,6 @@ import { join } from "node:path";
 import kleur from "kleur";
 import { readConfig } from "../fs/readConfig.js";
 import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
-import { resolveShapeAgents } from "../catalog/shape-agents.js";
 import type { AikitConfig, CliArgs } from "../types.js";
 
 export async function runDiff(argv: CliArgs): Promise<void> {
@@ -43,18 +42,9 @@ export async function runDiff(argv: CliArgs): Promise<void> {
   checkCatalogAgentsTier2(config, missing, drifted);
   checkCatalogDir("hooks", ".claude/hooks", missing, drifted, [".sh"]);
 
-  // Claude-only assets shipped at standard+ scope
-  if (config.tools.includes("claude") && config.scope !== "minimal") {
+  // Claude-only assets
+  if (config.tools.includes("claude")) {
     checkCatalogDir("rules/claude-rules", ".claude/rules", missing, drifted);
-    const refPath = "docs/claude-md-reference.md";
-    if (!existsSync(refPath)) {
-      missing.push(refPath);
-    } else {
-      const fresh = catalog.claudeMdReference();
-      if (readFileSync(refPath, "utf8") !== fresh) {
-        drifted.push(refPath);
-      }
-    }
     const rulesPath = ".claude/aikit-rules.json";
     if (!existsSync(rulesPath)) {
       missing.push(rulesPath);
@@ -105,11 +95,7 @@ function checkCatalogAgentsTier2(
   const expected = new Set<string>(
     Array.isArray(tier2Selection) ? tier2Selection : []
   );
-  for (const agent of resolveShapeAgents(config.shape)) {
-    expected.add(agent);
-  }
 
-  // No expected agents → nothing to check.
   if (expected.size === 0) return;
 
   const tier2Dir = join(CATALOG_ROOT, "agents", "tier2");

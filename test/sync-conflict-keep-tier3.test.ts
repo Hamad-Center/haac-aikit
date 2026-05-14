@@ -13,11 +13,8 @@ const baseConfig: AikitConfig = {
   projectName: "demo",
   projectDescription: "demo",
   tools: ["claude"],
-  scope: "standard",
-  shape: ["library"],
   integrations: {
-    mcp: false, hooks: false, commands: false, subagents: true,
-    ci: false, husky: false, devcontainer: false, plugin: false, otel: false,
+    mcp: false, hooks: false, commands: false, subagents: true, ci: false,
   },
   skills: { tier1: "all", tier2: "all", tier3: [] },
   canonical: "AGENTS.md",
@@ -38,8 +35,8 @@ describe("sync — Keep + tier3", () => {
     writeFileSync(".aikitrc.json", JSON.stringify(baseConfig));
     await runSync({ _: ["sync"], yes: true, "dry-run": false, force: false, "skip-git-check": false, "no-color": false, help: false, version: false });
 
-    // Modify reviewer locally.
-    writeFileSync(".claude/agents/reviewer.md", "LOCAL MODIFICATION");
+    // Modify orchestrator locally.
+    writeFileSync(".claude/agents/orchestrator.md", "LOCAL MODIFICATION");
 
     // Inject a stub prompt that always answers "keep". Cast args to `never`
     // because `_conflictPrompt` is a private testability hook; the production
@@ -51,8 +48,8 @@ describe("sync — Keep + tier3", () => {
     await runSync({ _: ["sync"], yes: false, "dry-run": false, force: false, "skip-git-check": false, "no-color": false, help: false, version: false, _conflictPrompt: stubPrompt } as never);
 
     const cfg = JSON.parse(readFileSync(".aikitrc.json", "utf8"));
-    expect(cfg.agents?.tier3).toContain("reviewer");
+    expect(cfg.agents?.tier3).toContain("orchestrator");
     // Local mod preserved.
-    expect(readFileSync(".claude/agents/reviewer.md", "utf8")).toBe("LOCAL MODIFICATION");
+    expect(readFileSync(".claude/agents/orchestrator.md", "utf8")).toBe("LOCAL MODIFICATION");
   });
 });

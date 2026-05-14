@@ -3,32 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>haac-aikit — living project docs and decision pages, in two focused skills</title>
-  <meta name="description" content="Two skills that earn their weight: /docs keeps your project documentation current as an HTML tree, /decide writes one rich tradeoff page per decision. Replaces an earlier 20-template version that was too much overengineering for everyday use.">
+  <title>haac-aikit — the batteries-included AI-coding kit</title>
+  <meta name="description" content="Cross-tool AI-coding kit. Four HTML skills (docs, decide, directions, roadmap), shared AGENTS.md rules, safety hooks, rule observability. Claude Code, Cursor, Copilot, Windsurf, Aider, Gemini, Codex.">
   <meta name="aikit-pattern" content="Landing">
-  <meta property="og:title" content="haac-aikit — living project docs and decision pages, in two focused skills">
-  <meta property="og:description" content="Two focused skills (/docs + /decide) for living project documentation and decision pages. Replaces a 20-template version that was overengineering — but you can still download it if you want.">
+  <meta property="og:title" content="haac-aikit — the batteries-included AI-coding kit">
+  <meta property="og:description" content="One file (AGENTS.md) for all 7 AI tools. Four HTML skills. Safety hooks. Rule observability.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://hamad-center.github.io/haac-aikit/">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23D97757'/%3E%3Ctext x='50' y='66' text-anchor='middle' font-family='ui-serif,Georgia' font-size='52' font-weight='600' fill='%23FAF9F5'%3Ea%3C/text%3E%3C/svg%3E">
   <style>
     :root {
-      --ivory: #FAF9F5;
-      --slate: #141413;
-      --clay: #D97757;
-      --oat: #E3DACC;
-      --olive: #788C5D;
+      --ivory:    #FAF9F5;
+      --slate:    #141413;
+      --clay:     #D97757;
+      --oat:      #E3DACC;
+      --olive:    #788C5D;
       --gray-150: #F0EEE6;
       --gray-300: #D1CFC5;
       --gray-500: #87867F;
       --gray-700: #3D3D3A;
-      --white: #FFFFFF;
+      --white:    #FFFFFF;
       --mono: ui-monospace, "SF Mono", "Fira Code", "JetBrains Mono", monospace;
       --serif: ui-serif, Georgia, "Times New Roman", serif;
-      --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
-
     @media (prefers-color-scheme: dark) {
       :root {
         --ivory: #1a1714;
@@ -41,11 +40,8 @@
         --white: #211d18;
       }
     }
-
     * { box-sizing: border-box; }
-
-    html { -webkit-text-size-adjust: 100%; }
-
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
     body {
       margin: 0;
       font-family: var(--sans);
@@ -55,270 +51,201 @@
       font-size: 17px;
       -webkit-font-smoothing: antialiased;
     }
-
-    .page {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 56px 24px 96px;
-    }
-
+    .page { max-width: 820px; margin: 0 auto; padding: 56px 24px 96px; }
     .eyebrow {
-      font-family: var(--mono);
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--clay);
-      margin-bottom: 12px;
+      font-family: var(--mono); font-size: 12px;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--clay); margin-bottom: 12px;
     }
-
     h1 {
       font-family: var(--serif);
-      font-size: clamp(36px, 6vw, 56px);
-      font-weight: 600;
-      line-height: 1.08;
-      letter-spacing: -0.015em;
-      margin: 0 0 16px;
+      font-size: clamp(34px, 5.4vw, 50px);
+      font-weight: 600; line-height: 1.08;
+      letter-spacing: -0.015em; margin: 0 0 16px;
       color: var(--slate);
     }
-
     .tagline {
-      font-size: clamp(18px, 2.2vw, 22px);
-      color: var(--gray-700);
-      margin: 0 0 32px;
-      max-width: 600px;
+      font-size: clamp(17px, 2vw, 20px);
+      color: var(--gray-700); margin: 0 0 32px;
+      max-width: 660px;
     }
-
     .install {
-      background: var(--slate);
-      color: var(--ivory);
-      padding: 20px 24px;
-      border-radius: 10px;
-      margin: 0 0 48px;
-      font-family: var(--mono);
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      background: var(--slate); color: var(--ivory);
+      padding: 18px 22px; border-radius: 10px; margin: 0 0 12px;
+      font-family: var(--mono); font-size: 15px;
+      display: flex; align-items: center; gap: 12px;
       overflow-x: auto;
     }
-
     .install .prompt { color: var(--clay); user-select: none; }
+    .install code { font-family: inherit; color: var(--ivory); background: transparent; padding: 0; }
+    .install-note { font-family: var(--mono); font-size: 12px; color: var(--gray-500); margin: 0 0 36px; }
 
-    .install code { font-family: inherit; color: var(--ivory); }
-
-    .install-meta {
-      display: flex;
-      gap: 16px;
-      margin: -32px 0 56px;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--gray-500);
-      flex-wrap: wrap;
+    .toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 56px; }
+    .toc a {
+      font-family: var(--mono); font-size: 12px;
+      letter-spacing: 0.02em; padding: 6px 12px; border-radius: 999px;
+      background: var(--gray-150); color: var(--gray-700);
+      border: 1px solid var(--gray-300);
+      text-decoration: none; transition: border-color 120ms, color 120ms;
     }
+    .toc a:hover { border-color: var(--clay); color: var(--clay); }
 
-    .install-meta .pill {
-      background: var(--gray-150);
-      padding: 4px 10px;
-      border-radius: 4px;
-      color: var(--gray-700);
-    }
-
-    section { margin: 0 0 48px; scroll-margin-top: 28px; }
-
+    section { margin: 0 0 64px; scroll-margin-top: 28px; }
     h2 {
-      font-family: var(--serif);
-      font-size: 28px;
-      font-weight: 600;
-      margin: 0 0 16px;
-      letter-spacing: -0.01em;
+      font-family: var(--serif); font-size: clamp(22px, 2.6vw, 28px);
+      font-weight: 600; margin: 0 0 8px; letter-spacing: -0.01em;
+    }
+    .section-intro { color: var(--gray-700); margin: 0 0 24px; max-width: 640px; }
+    p { margin: 0 0 16px; max-width: 660px; }
+    p:last-child { margin-bottom: 0; }
+    a { color: var(--clay); text-decoration: none; border-bottom: 1px solid var(--gray-300); transition: border-color 120ms; }
+    a:hover { border-bottom-color: var(--clay); }
+    code {
+      font-family: var(--mono); font-size: 0.9em;
+      background: var(--gray-150); padding: 1px 6px; border-radius: 3px;
     }
 
-    p { margin: 0 0 16px; max-width: 640px; }
-
-    p:last-child { margin-bottom: 0; }
-
-    a {
-      color: var(--clay);
-      text-decoration: none;
-      border-bottom: 1px solid var(--gray-300);
+    /* HTML skills grid */
+    .skills-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      margin: 0 0 16px;
+    }
+    @media (max-width: 640px) { .skills-grid { grid-template-columns: 1fr; } }
+    .skill {
+      background: var(--white); border: 1px solid var(--gray-300);
+      border-radius: 10px; padding: 16px 18px;
       transition: border-color 120ms;
     }
-
-    a:hover { border-bottom-color: var(--clay); }
-
-    a:focus-visible {
-      outline: 2px solid var(--clay);
-      outline-offset: 2px;
-      border-radius: 2px;
+    .skill:hover { border-color: var(--clay); }
+    .skill h3 {
+      font-family: var(--mono); font-size: 15px; font-weight: 600;
+      margin: 0 0 6px; color: var(--clay);
+    }
+    .skill .what { font-size: 14.5px; color: var(--gray-700); margin: 0 0 10px; }
+    .skill .path {
+      font-family: var(--mono); font-size: 12px;
+      color: var(--gray-500); background: var(--gray-150);
+      padding: 6px 8px; border-radius: 4px;
+      display: block; white-space: nowrap; overflow-x: auto;
     }
 
-    .cards {
-      display: grid;
-      gap: 12px;
-      margin: 0;
+    .install-html {
+      background: var(--gray-150); border: 1px solid var(--gray-300);
+      border-radius: 8px; padding: 12px 16px;
+      font-family: var(--mono); font-size: 14px;
+      margin: 16px 0 0; color: var(--gray-700);
+      display: flex; align-items: center; gap: 10px;
     }
+    .install-html .prompt { color: var(--clay); user-select: none; }
+    .install-html code { background: transparent; padding: 0; color: var(--slate); }
+    .install-html .meta { color: var(--gray-500); font-size: 12px; margin-left: auto; }
 
-    .card {
-      background: var(--white);
-      border: 1px solid var(--gray-300);
-      border-radius: 10px;
-      padding: 18px 20px;
-      transition: border-color 120ms, transform 120ms;
-    }
-
-    .card:hover { border-color: var(--clay); }
-
-    .card h3 {
-      font-family: var(--sans);
-      font-size: 16px;
-      font-weight: 600;
-      margin: 0 0 6px;
-      color: var(--slate);
-    }
-
-    .card p {
-      font-size: 15px;
-      color: var(--gray-700);
-      margin: 0;
-    }
-
-    .flow {
-      background: var(--gray-150);
-      border-radius: 10px;
-      padding: 20px 24px;
-      font-family: var(--mono);
-      font-size: 14px;
-      line-height: 1.7;
+    .diagram {
+      background: var(--white); border: 1px solid var(--gray-300);
+      border-radius: 12px; padding: 24px 18px; margin: 16px 0 0;
       overflow-x: auto;
     }
-
-    .flow .you { color: var(--clay); }
-    .flow .claude { color: var(--olive); }
-    .flow .arrow { color: var(--gray-500); padding-right: 6px; }
-    .flow .step { color: var(--slate); }
-
-    .compare {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin: 0 0 12px;
+    .diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .diagram-caption {
+      font-size: 13px; color: var(--gray-500); text-align: center;
+      margin: 12px 0 0; font-family: var(--mono);
     }
 
-    .compare .col {
-      background: var(--white);
-      border: 1px solid var(--gray-300);
-      border-radius: 10px;
-      padding: 18px 20px;
+    /* CLI command table */
+    table.cmd {
+      width: 100%; border-collapse: collapse;
+      background: var(--white); border: 1px solid var(--gray-300);
+      border-radius: 12px; overflow: hidden; font-size: 14px;
     }
+    table.cmd th, table.cmd td {
+      padding: 11px 16px; text-align: left;
+      border-bottom: 1px solid var(--gray-300);
+    }
+    table.cmd tr:last-child td { border-bottom: none; }
+    table.cmd th {
+      background: var(--gray-150); font-family: var(--mono);
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--gray-700); font-weight: 600;
+    }
+    table.cmd td.cmd-name {
+      font-family: var(--mono); color: var(--clay);
+      white-space: nowrap; font-weight: 600;
+    }
+    table.cmd td.cmd-desc { color: var(--gray-700); }
 
-    .compare .col.before { border-top: 3px solid var(--clay); }
-    .compare .col.after { border-top: 3px solid var(--olive); }
-
-    .compare .col h3 {
-      font-family: var(--mono);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin: 0 0 12px;
+    /* Chip lists */
+    .chip-group { margin: 0 0 18px; }
+    .chip-group h4 {
+      font-family: var(--mono); font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--gray-500); margin: 0 0 10px; font-weight: 600;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      font-family: var(--mono); font-size: 12px;
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--white); border: 1px solid var(--gray-300);
       color: var(--gray-700);
     }
+    .chip.tier1 { background: var(--oat); border-color: var(--oat); color: var(--slate); }
+    .chip.tier2 { background: var(--gray-150); }
 
-    .compare .col.before h3 { color: var(--clay); }
-    .compare .col.after h3 { color: var(--olive); }
-
-    .compare .col ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      font-size: 15px;
-      line-height: 1.55;
+    /* Hook list */
+    .item-list { display: grid; gap: 12px; }
+    .item {
+      background: var(--white); border: 1px solid var(--gray-300);
+      border-radius: 10px; padding: 14px 18px;
     }
-
-    .compare .col li {
-      padding: 6px 0 6px 20px;
-      position: relative;
-      color: var(--gray-700);
+    .item .name {
+      font-family: var(--mono); font-size: 13px;
+      color: var(--clay); font-weight: 600;
     }
+    .item .desc { font-size: 14.5px; color: var(--gray-700); margin: 4px 0 0; }
 
-    .compare .col.before li::before {
-      content: "✗";
-      position: absolute;
-      left: 0;
-      color: var(--clay);
-      font-weight: 600;
-    }
-
-    .compare .col.after li::before {
-      content: "✓";
-      position: absolute;
-      left: 0;
-      color: var(--olive);
-      font-weight: 600;
-    }
-
+    /* Attribution */
     .attribution {
-      background: var(--gray-150);
-      border-left: 3px solid var(--clay);
-      padding: 18px 22px;
-      border-radius: 6px;
-      margin: 0 0 24px;
-      font-size: 16px;
+      background: var(--gray-150); border-left: 3px solid var(--clay);
+      padding: 16px 22px; border-radius: 6px;
+      margin: 0; font-size: 15px; color: var(--gray-700);
     }
-
     .attribution .source {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--gray-500);
-      margin-top: 8px;
-      display: block;
+      font-family: var(--mono); font-size: 12px;
+      color: var(--gray-500); margin-top: 8px; display: block;
     }
 
-    @media (max-width: 600px) {
-      .compare { grid-template-columns: 1fr; }
-    }
-
+    /* Footer */
     .footer {
-      margin-top: 64px;
-      padding-top: 24px;
+      margin-top: 64px; padding-top: 24px;
       border-top: 1px solid var(--gray-300);
-      font-size: 14px;
-      color: var(--gray-500);
-      font-family: var(--mono);
+      font-size: 14px; color: var(--gray-500); font-family: var(--mono);
     }
-
     .footer a { color: var(--gray-700); border-bottom-color: transparent; }
     .footer a:hover { color: var(--clay); border-bottom-color: var(--clay); }
     .footer .links { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
 
+    /* Copy button */
     .copy-btn {
-      background: transparent;
-      border: 1px solid var(--gray-500);
-      color: var(--gray-300);
-      font-family: var(--mono);
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-left: auto;
-      transition: border-color 120ms, color 120ms;
+      background: transparent; border: 1px solid var(--gray-500);
+      color: var(--gray-300); font-family: var(--mono); font-size: 11px;
+      padding: 4px 10px; border-radius: 4px; cursor: pointer;
+      margin-left: auto; transition: border-color 120ms, color 120ms;
     }
-
     .copy-btn:hover { border-color: var(--ivory); color: var(--ivory); }
-    .copy-btn:focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
     .copy-btn.copied { color: var(--clay); border-color: var(--clay); }
 
     @media (max-width: 600px) {
       .page { padding: 36px 18px 64px; }
       .install { font-size: 14px; padding: 16px; }
-      .install-meta { margin-top: -24px; }
     }
   </style>
 </head>
 <body>
   <main class="page">
-    <div class="eyebrow">v0.11 · npm · MIT</div>
-    <h1>Docs that update themselves.</h1>
-    <p class="tagline">Two new Claude Code skills that maintain your project's HTML documentation and decision log — every time the code changes. Cross-tool. Cheap on tokens.</p>
+
+    <!-- HERO -->
+    <div class="eyebrow">npm · 7 AI tools · MIT · pre-1.0</div>
+    <h1>The batteries-included AI-coding kit.</h1>
+    <p class="tagline">One <code>AGENTS.md</code>, seven AI tools see it. Four HTML skills that produce single-page artifacts instead of walls of markdown. Safety hooks, rule observability, all idempotent.</p>
 
     <div class="install" role="region" aria-label="Install command">
       <span class="prompt" aria-hidden="true">$</span>
@@ -327,86 +254,332 @@
         navigator.clipboard.writeText(document.getElementById('install-cmd').textContent).then(()=>{this.textContent='copied';this.classList.add('copied');setTimeout(()=>{this.textContent='copy';this.classList.remove('copied')},1400)});
       ">copy</button>
     </div>
+    <p class="install-note">30-second wizard. Headless: <code>npx haac-aikit --yes --tools=claude</code></p>
 
-    <div class="install-meta" aria-hidden="true">
-      <span class="pill">~157KB bundle</span>
-      <span class="pill">7 AI tools</span>
-      <span class="pill">no build step</span>
-    </div>
+    <nav class="toc" aria-label="Page sections">
+      <a href="#html">HTML skills</a>
+      <a href="#commands">CLI commands</a>
+      <a href="#ships">What ships</a>
+      <a href="#tools">Cross-tool</a>
+      <a href="#observe">Observability</a>
+      <a href="#credit">Credit</a>
+    </nav>
 
-    <section aria-labelledby="pain-heading">
-      <h2 id="pain-heading">Your README went stale six months ago.</h2>
-      <p>Architecture docs drift. Decision rationale lives in lost Slack threads. New hires re-ask the original author "how does this work?" because the doc explaining it is from two refactors ago. Every project has this problem. Most projects give up.</p>
-      <div class="compare" role="region" aria-label="Before and after">
-        <div class="col before">
-          <h3>without</h3>
-          <ul>
-            <li>README untouched since launch</li>
-            <li>ARCHITECTURE.md drifted from real architecture</li>
-            <li>"Why did we pick X?" lost in Slack</li>
-            <li>Onboarding = re-asking the original author</li>
-          </ul>
+    <!-- HTML SKILLS -->
+    <section id="html" aria-labelledby="html-h">
+      <h2 id="html-h">The four HTML skills</h2>
+      <p class="section-intro">Each one takes a single prompt and writes one self-contained HTML file you can open in a browser and commit to git. No build step, no CDN, no dependencies.</p>
+
+      <div class="skills-grid">
+        <article class="skill">
+          <h3>/docs</h3>
+          <p class="what">Living documentation tree. The agent edits one section at a time via marker-bounded blocks; <code>index.html</code> summary stays in sync.</p>
+          <span class="path">docs/&lt;area&gt;.html</span>
+        </article>
+        <article class="skill">
+          <h3>/decide</h3>
+          <p class="what">Tradeoff page for 2-4 technical options. Cards with pros/cons, side-by-side comparison, plain-language explanation, marked recommendation.</p>
+          <span class="path">docs/decisions/&lt;date&gt;-&lt;slug&gt;.html</span>
+        </article>
+        <article class="skill">
+          <h3>/directions</h3>
+          <p class="what">2-4 visual design variants rendered live side by side, with a light/dark stage toggle so you pick by looking, not reading.</p>
+          <span class="path">docs/directions/&lt;date&gt;-&lt;slug&gt;.html</span>
+        </article>
+        <article class="skill">
+          <h3>/roadmap</h3>
+          <p class="what">Implementation roadmap: milestones, SVG data-flow diagram, mockups, key code snippets, risk table, open questions.</p>
+          <span class="path">docs/roadmaps/&lt;date&gt;-&lt;slug&gt;.html</span>
+        </article>
+      </div>
+
+      <div class="install-html" role="region" aria-label="Install the HTML bundle">
+        <span class="prompt" aria-hidden="true">$</span>
+        <code>aikit add --html</code>
+        <span class="meta">installs all 4 skills + commands + templates</span>
+      </div>
+
+      <div class="diagram" role="img" aria-labelledby="diag1-t diag1-d">
+        <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg">
+          <title id="diag1-t">How the four HTML skills fan out</title>
+          <desc id="diag1-d">One AI prompt enters on the left; each skill writes a single HTML file to a dated directory under docs/ on the right.</desc>
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#87867F"/></marker>
+            <marker id="arrow-clay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#D97757"/></marker>
+          </defs>
+          <rect x="20" y="100" width="150" height="48" rx="10" fill="#FAF9F5" stroke="#D97757" stroke-width="1.5"/>
+          <text x="95" y="123" text-anchor="middle" font-family="ui-monospace, monospace" font-size="13" font-weight="600" fill="#D97757">your prompt</text>
+          <text x="95" y="140" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#87867F">/&lt;skill&gt; topic</text>
+          <circle cx="280" cy="124" r="34" fill="#141413"/>
+          <text x="280" y="121" text-anchor="middle" font-family="ui-serif, Georgia, serif" font-size="13" font-weight="600" fill="#FAF9F5">AI tool</text>
+          <text x="280" y="137" text-anchor="middle" font-family="ui-monospace, monospace" font-size="9.5" fill="#C9B98A">+ template</text>
+          <line x1="172" y1="124" x2="244" y2="124" stroke="#87867F" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <g font-family="ui-monospace, monospace">
+            <g><rect x="430" y="20" width="270" height="40" rx="8" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.2"/><text x="446" y="38" font-size="12" font-weight="600" fill="#D97757">/docs</text><text x="495" y="38" font-size="11" fill="#3D3D3A">docs/&lt;area&gt;.html</text><text x="446" y="52" font-size="10" fill="#87867F">living documentation tree</text></g>
+            <g><rect x="430" y="74" width="270" height="40" rx="8" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.2"/><text x="446" y="92" font-size="12" font-weight="600" fill="#D97757">/decide</text><text x="498" y="92" font-size="11" fill="#3D3D3A">docs/decisions/&lt;date&gt;.html</text><text x="446" y="106" font-size="10" fill="#87867F">single-page tradeoff doc</text></g>
+            <g><rect x="430" y="128" width="270" height="40" rx="8" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.2"/><text x="446" y="146" font-size="12" font-weight="600" fill="#D97757">/directions</text><text x="517" y="146" font-size="11" fill="#3D3D3A">docs/directions/&lt;date&gt;.html</text><text x="446" y="160" font-size="10" fill="#87867F">2-4 visual variants rendered live</text></g>
+            <g><rect x="430" y="182" width="270" height="40" rx="8" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.2"/><text x="446" y="200" font-size="12" font-weight="600" fill="#D97757">/roadmap</text><text x="505" y="200" font-size="11" fill="#3D3D3A">docs/roadmaps/&lt;date&gt;.html</text><text x="446" y="214" font-size="10" fill="#87867F">milestones · diagram · code · risks</text></g>
+          </g>
+          <g stroke="#D97757" stroke-width="1.4" fill="none">
+            <path d="M314 116 C 370 100, 380 60, 425 40" marker-end="url(#arrow-clay)"/>
+            <path d="M316 122 C 380 110, 380 95, 425 94" marker-end="url(#arrow-clay)"/>
+            <path d="M316 130 C 380 138, 380 145, 425 148" marker-end="url(#arrow-clay)"/>
+            <path d="M314 138 C 370 158, 380 195, 425 202" marker-end="url(#arrow-clay)"/>
+          </g>
+        </svg>
+        <p class="diagram-caption">one prompt · one HTML file · committed to git</p>
+      </div>
+    </section>
+
+    <!-- CLI COMMANDS -->
+    <section id="commands" aria-labelledby="cmd-h">
+      <h2 id="cmd-h">All CLI commands</h2>
+      <p class="section-intro">Eight commands cover the full lifecycle: install, sync, audit, ship.</p>
+
+      <table class="cmd">
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd-name">aikit</td><td class="cmd-desc">Interactive wizard. Picks tools, writes <code>.aikitrc.json</code> + per-tool files.</td></tr>
+          <tr><td class="cmd-name">aikit sync</td><td class="cmd-desc">Regenerate per-tool files from <code>.aikitrc.json</code>. Idempotent — runs as many times as you want.</td></tr>
+          <tr><td class="cmd-name">aikit update</td><td class="cmd-desc">Pull the latest catalog templates, show a diff per file, prompt before writing.</td></tr>
+          <tr><td class="cmd-name">aikit diff</td><td class="cmd-desc">Show drift between your current state and a fresh generation. No writes.</td></tr>
+          <tr><td class="cmd-name">aikit add &lt;name&gt;</td><td class="cmd-desc">Add a single skill, command, agent, or hook from the catalog.</td></tr>
+          <tr><td class="cmd-name">aikit add --html</td><td class="cmd-desc">Add the four HTML skills, their slash commands, and the four templates as one bundle.</td></tr>
+          <tr><td class="cmd-name">aikit list</td><td class="cmd-desc">Show what's installed and what's available in the catalog.</td></tr>
+          <tr><td class="cmd-name">aikit doctor</td><td class="cmd-desc">Sanity check. <code>--rules</code> adds the observability report.</td></tr>
+          <tr><td class="cmd-name">aikit report</td><td class="cmd-desc">Rule-adherence summary in markdown or JSON. Drop into a PR comment or CI step.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- WHAT SHIPS -->
+    <section id="ships" aria-labelledby="ships-h">
+      <h2 id="ships-h">What ships in the kit</h2>
+      <p class="section-intro">Every install drops skills, agents, hooks, and templates into your repo. Two tiers: <span class="chip tier1">tier1</span> always-on for the AI, <span class="chip tier2">tier2</span> opt-in via <code>aikit add</code>.</p>
+
+      <div class="chip-group">
+        <h4>Skills · 14 tier1 (always-on)</h4>
+        <div class="chips">
+          <span class="chip tier1">brainstorming</span>
+          <span class="chip tier1">codebase-exploration</span>
+          <span class="chip tier1">decide</span>
+          <span class="chip tier1">directions</span>
+          <span class="chip tier1">docs</span>
+          <span class="chip tier1">executing-plans</span>
+          <span class="chip tier1">requesting-code-review</span>
+          <span class="chip tier1">roadmap</span>
+          <span class="chip tier1">systematic-debugging</span>
+          <span class="chip tier1">test-driven-development</span>
+          <span class="chip tier1">using-git-worktrees</span>
+          <span class="chip tier1">verification-before-completion</span>
+          <span class="chip tier1">writing-commits</span>
+          <span class="chip tier1">writing-plans</span>
         </div>
-        <div class="col after">
-          <h3>with /docs and /decide</h3>
-          <ul>
-            <li>HTML docs that update with the code</li>
-            <li>Section-bounded edits — surgical, not whole-file</li>
-            <li>Permanent decision log under docs/decisions/</li>
-            <li>"Why did we pick X?" → searchable answer</li>
-          </ul>
+      </div>
+
+      <div class="chip-group">
+        <h4>Skills · 11 tier2 (opt-in)</h4>
+        <div class="chips">
+          <span class="chip tier2">api-design</span>
+          <span class="chip tier2">dependency-hygiene</span>
+          <span class="chip tier2">dispatching-parallel-agents</span>
+          <span class="chip tier2">finishing-a-development-branch</span>
+          <span class="chip tier2">incident-response</span>
+          <span class="chip tier2">performance-profiling</span>
+          <span class="chip tier2">receiving-code-review</span>
+          <span class="chip tier2">refactoring-simplify</span>
+          <span class="chip tier2">security-review</span>
+          <span class="chip tier2">software-architect</span>
+          <span class="chip tier2">writing-pull-requests</span>
+        </div>
+      </div>
+
+      <div class="chip-group">
+        <h4>Specialist agents · 2 tier1, 3 tier2</h4>
+        <div class="chips">
+          <span class="chip tier1">orchestrator</span>
+          <span class="chip tier1">pr-describer</span>
+          <span class="chip tier2">backend</span>
+          <span class="chip tier2">frontend</span>
+          <span class="chip tier2">mobile</span>
+        </div>
+      </div>
+
+      <h3 style="font-family: var(--serif); font-size: 20px; margin: 32px 0 12px; color: var(--slate);">Safety + telemetry hooks</h3>
+      <p class="section-intro" style="margin-bottom: 16px;">Hooks fire <em>before</em> a tool call. Safety hooks block dangerous operations; telemetry hooks observe rule adherence without blocking.</p>
+      <div class="item-list">
+        <div class="item">
+          <span class="name">block-dangerous-bash.sh</span>
+          <p class="desc">Stops <code>rm -rf /</code>, <code>chmod -R 777</code>, and other shell footguns before they run.</p>
+        </div>
+        <div class="item">
+          <span class="name">block-force-push-main.sh</span>
+          <p class="desc">Refuses <code>git push --force</code> against <code>main</code> / <code>master</code> / <code>develop</code>.</p>
+        </div>
+        <div class="item">
+          <span class="name">block-secrets-in-commits.sh</span>
+          <p class="desc">Catches <code>.env*</code>, <code>id_rsa*</code>, AWS keys, and other secret patterns before they hit git.</p>
+        </div>
+        <div class="item">
+          <span class="name">file-guard.sh</span>
+          <p class="desc">Blocks reads of <code>.ssh/</code>, <code>.aws/</code>, <code>secrets/</code>, and <code>*.pem</code> files.</p>
+        </div>
+        <div class="item">
+          <span class="name">log-rule-event.sh</span>
+          <p class="desc">Records every time a rule loads or is cited. Powers the observability loop.</p>
+        </div>
+        <div class="item">
+          <span class="name">check-pattern-violations.sh</span>
+          <p class="desc">After writes, greps each file for rule patterns and flags violations as JSONL events.</p>
+        </div>
+        <div class="item">
+          <span class="name">judge-rule-compliance.sh</span>
+          <p class="desc">Optional LLM-judge step that scores whether the AI's output followed the cited rules. Off by default.</p>
         </div>
       </div>
     </section>
 
-    <section aria-labelledby="get-heading">
-      <h2 id="get-heading">The two skills</h2>
-      <div class="cards">
-        <article class="card">
-          <h3><code>/docs</code> &mdash; living documentation</h3>
-          <p>Maintains an HTML doc tree at <code>docs/</code> — architecture, features, gotchas. The agent reads only the section it needs, proposes the edit, writes after you confirm. Everything outside the markers stays verbatim.</p>
-        </article>
-        <article class="card">
-          <h3><code>/decide</code> &mdash; tradeoff pages</h3>
-          <p>One rich HTML page per architectural choice. Options as cards, pros/cons as colored dots, recommendation marked with a star, technical bit rewritten for non-engineers. Each call appends to a permanent decision log.</p>
-        </article>
-        <article class="card">
-          <h3>The marker engine that makes it cheap</h3>
-          <p>Sections wrapped in <code>&lt;!-- BEGIN:haac-aikit:section:&lt;id&gt; --&gt;</code> blocks. The agent loads one block per edit, not the whole file. Round-trip tested, idempotent, dialect-aware.</p>
-        </article>
+    <!-- CROSS-TOOL -->
+    <section id="tools" aria-labelledby="tools-h">
+      <h2 id="tools-h">One file, seven AI tools see it</h2>
+      <p class="section-intro">Write your rules once in <code>AGENTS.md</code>. The kit translates them into each tool's native format on every <code>aikit sync</code>.</p>
+
+      <div class="diagram" role="img" aria-labelledby="diag2-t diag2-d">
+        <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg">
+          <title id="diag2-t">Cross-tool dialect translation</title>
+          <desc id="diag2-d">One AGENTS.md file in the center fans out to seven tool-specific files.</desc>
+          <defs>
+            <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#87867F"/></marker>
+          </defs>
+          <g>
+            <rect x="280" y="115" width="160" height="50" rx="10" fill="#141413"/>
+            <text x="360" y="138" text-anchor="middle" font-family="ui-monospace, monospace" font-size="14" font-weight="600" fill="#FAF9F5">AGENTS.md</text>
+            <text x="360" y="154" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" fill="#C9B98A">your single source</text>
+          </g>
+          <g font-family="ui-monospace, monospace" font-size="11" fill="#3D3D3A">
+            <g><rect x="80"  y="30" width="120" height="36" rx="6" fill="#FAF9F5" stroke="#D1CFC5"/><text x="140" y="52" text-anchor="middle">CLAUDE.md</text></g>
+            <g><rect x="300" y="30" width="120" height="36" rx="6" fill="#FAF9F5" stroke="#D1CFC5"/><text x="360" y="46" text-anchor="middle" font-weight="600" fill="#D97757">.cursor/rules/</text><text x="360" y="60" text-anchor="middle" font-size="9.5" fill="#87867F">*.mdc</text></g>
+            <g><rect x="520" y="30" width="120" height="36" rx="6" fill="#FAF9F5" stroke="#D1CFC5"/><text x="580" y="46" text-anchor="middle">.github/</text><text x="580" y="60" text-anchor="middle" font-size="9.5" fill="#87867F">copilot-instructions</text></g>
+            <g><rect x="20"  y="120" width="130" height="40" rx="6" fill="#FAF9F5" stroke="#D1CFC5"/><text x="85" y="138" text-anchor="middle">.windsurfrules</text><text x="85" y="152" text-anchor="middle" font-size="9.5" fill="#87867F">windsurf</text></g>
+            <g><rect x="570" y="120" width="130" height="40" rx="6" fill="#FAF9F5" stroke="#D1CFC5"/><text x="635" y="138" text-anchor="middle">.aider.conf.yml</text><text x="635" y="152" text-anchor="middle" font-size="9.5" fill="#87867F">aider</text></g>
+            <g><rect x="120" y="220" width="120" height="36" rx="6" fill="#FAF9F5" stroke="#D1CFC5"/><text x="180" y="237" text-anchor="middle">GEMINI.md</text><text x="180" y="250" text-anchor="middle" font-size="9.5" fill="#87867F">gemini cli</text></g>
+            <g><rect x="480" y="220" width="120" height="36" rx="6" fill="#FAF9F5" stroke="#D1CFC5"/><text x="540" y="237" text-anchor="middle">AGENTS.md</text><text x="540" y="250" text-anchor="middle" font-size="9.5" fill="#87867F">openai codex</text></g>
+          </g>
+          <g stroke="#87867F" stroke-width="1.2" fill="none">
+            <path d="M310 115 L 180 66" marker-end="url(#arrow2)"/>
+            <path d="M360 115 L 360 66" marker-end="url(#arrow2)"/>
+            <path d="M410 115 L 540 66" marker-end="url(#arrow2)"/>
+            <path d="M280 140 L 150 140" marker-end="url(#arrow2)"/>
+            <path d="M440 140 L 570 140" marker-end="url(#arrow2)"/>
+            <path d="M310 165 L 200 222" marker-end="url(#arrow2)"/>
+            <path d="M410 165 L 520 222" marker-end="url(#arrow2)"/>
+          </g>
+        </svg>
+        <p class="diagram-caption">one AGENTS.md → seven tool-native files, regenerated on every sync</p>
       </div>
+
+      <p style="margin-top: 18px;">Each translation is a <strong>dialect</strong>: Cursor MDC frontmatter, Claude emphasis tokens (<code>IMPORTANT:</code>, <code>YOU MUST</code>), Aider's imperative phrasing, Copilot's bullet style. Rules can carry <code>paths=glob</code> metadata to load only when matching files are touched.</p>
+
+      <p style="margin-top: 16px;">And it goes deeper than rules — <strong>skills, agents, hooks, and MCP servers fan out per tool</strong>, each in the target tool's native format. The matrix below shows what gets installed when you select each tool:</p>
+
+      <table class="cmd" style="margin-top: 12px;">
+        <thead>
+          <tr><th>Feature</th><th>Claude</th><th>Cursor</th><th>Windsurf</th><th>Copilot</th><th>Codex</th><th>Gemini</th><th>Aider</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="cmd-name">skills</td>
+            <td>.claude/skills/</td>
+            <td>.cursor/rules/*.mdc</td>
+            <td>.windsurf/rules/</td>
+            <td>.github/instructions/</td>
+            <td>via AGENTS.md</td>
+            <td>.gemini/commands/</td>
+            <td>index appended</td>
+          </tr>
+          <tr>
+            <td class="cmd-name">agents</td>
+            <td>.claude/agents/</td>
+            <td>—</td>
+            <td>—</td>
+            <td>.github/agents/</td>
+            <td>.codex/agents/</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td class="cmd-name">hooks</td>
+            <td>.claude/hooks/</td>
+            <td>.cursor/hooks.json</td>
+            <td>—</td>
+            <td>—</td>
+            <td>experimental</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td class="cmd-name">MCP</td>
+            <td>.mcp.json</td>
+            <td>.cursor/mcp.json</td>
+            <td>via UI</td>
+            <td>via VS Code</td>
+            <td>.codex/config.toml</td>
+            <td>via settings</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top: 16px;">Pick Cursor, get <code>.cursor/rules/*.mdc</code> for every skill, <code>.cursor/hooks.json</code> for safety hooks, and <code>.cursor/mcp.json</code> for MCP. Pick Codex, get <code>.codex/agents/*.toml</code> and <code>.codex/config.toml [mcp_servers]</code>. Each tool sees only its own files — no cross-tool ballast.</p>
     </section>
 
-    <section aria-labelledby="use-heading">
-      <h2 id="use-heading">In practice</h2>
-      <div class="flow" role="region" aria-label="Example interaction">
-        <div><span class="you">you:</span> /docs the new auth refresh flow</div>
-        <div><span class="claude">claude:</span></div>
-        <div><span class="arrow">→</span><span class="step">reads the <code>flow</code> section in <code>docs/auth.html</code></span></div>
-        <div><span class="arrow">→</span><span class="step">"I'll update the auth flow to reflect refresh tokens — okay?"</span></div>
-        <div><span class="arrow">→</span><span class="step">on yes, writes the section + updates index.html summary</span></div>
-        <div style="margin-top:14px;"><span class="you">you:</span> /decide session cookies vs JWT vs Clerk</div>
-        <div><span class="claude">claude:</span></div>
-        <div><span class="arrow">→</span><span class="step">confirms options + your recommendation in chat</span></div>
-        <div><span class="arrow">→</span><span class="step">writes <code>docs/decisions/2026-05-13-auth-strategy.html</code></span></div>
+    <!-- OBSERVABILITY -->
+    <section id="observe" aria-labelledby="obs-h">
+      <h2 id="obs-h">The observability loop</h2>
+      <p class="section-intro">Rules without telemetry rot. Hooks log which rules load, which get cited, and which patterns get violated in just-written files. <code>aikit doctor --rules</code> shows the per-rule buckets; <code>aikit report</code> turns it into markdown or JSON.</p>
+
+      <div class="diagram" role="img" aria-labelledby="diag3-t diag3-d">
+        <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg">
+          <title id="diag3-t">Rule observability loop</title>
+          <desc id="diag3-d">Rules fire during AI work; hooks log loads, citations, violations; aikit doctor reports buckets; you prune dead-weight rules; loop repeats.</desc>
+          <defs>
+            <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#D97757"/></marker>
+          </defs>
+          <g font-family="ui-monospace, monospace" font-size="11.5" fill="#141413">
+            <rect x="20"  y="80" width="140" height="40" rx="8" fill="#FFFFFF" stroke="#D1CFC5"/>
+            <text x="90" y="98" text-anchor="middle" font-weight="600">rules in AGENTS.md</text>
+            <text x="90" y="112" text-anchor="middle" font-size="10" fill="#87867F">declared once</text>
+            <rect x="200" y="80" width="140" height="40" rx="8" fill="#FFFFFF" stroke="#D1CFC5"/>
+            <text x="270" y="98" text-anchor="middle" font-weight="600">AI loads / cites</text>
+            <text x="270" y="112" text-anchor="middle" font-size="10" fill="#87867F">fires hook events</text>
+            <rect x="380" y="80" width="140" height="40" rx="8" fill="#FFFFFF" stroke="#D1CFC5"/>
+            <text x="450" y="98" text-anchor="middle" font-weight="600">aikit doctor</text>
+            <text x="450" y="112" text-anchor="middle" font-size="10" fill="#87867F">buckets per rule</text>
+            <rect x="560" y="80" width="140" height="40" rx="8" fill="#141413"/>
+            <text x="630" y="98" text-anchor="middle" font-weight="600" fill="#FAF9F5">you prune</text>
+            <text x="630" y="112" text-anchor="middle" font-size="10" fill="#C9B98A">dead-weight rules out</text>
+          </g>
+          <g stroke="#D97757" stroke-width="1.4" fill="none">
+            <line x1="162" y1="100" x2="198" y2="100" marker-end="url(#arrow3)"/>
+            <line x1="342" y1="100" x2="378" y2="100" marker-end="url(#arrow3)"/>
+            <line x1="522" y1="100" x2="558" y2="100" marker-end="url(#arrow3)"/>
+            <path d="M630 80 C 630 30, 90 30, 90 80" stroke-dasharray="4 4" marker-end="url(#arrow3)"/>
+            <text x="360" y="22" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10" fill="#D97757">edit AGENTS.md, repeat</text>
+          </g>
+        </svg>
+        <p class="diagram-caption">declare → fire → measure → prune</p>
       </div>
+
+      <p style="margin-top: 18px;">Rules are bucketed as <strong>cited</strong> (the AI referenced it), <strong>loaded</strong> (in-context but not used), <strong>violated</strong> (pattern matched in a write), or <strong>dead</strong> (never observed). Dead rules cost tokens without payoff — the report flags them for removal.</p>
     </section>
 
-    <section aria-labelledby="credit-heading">
-      <h2 id="credit-heading">Built on a real insight</h2>
+    <!-- ATTRIBUTION -->
+    <section id="credit" aria-labelledby="credit-h">
+      <h2 id="credit-h">Built on a real insight</h2>
       <div class="attribution">
-        These skills exist because Thariq Shihipar wrote <a href="https://thariqs.github.io/html-effectiveness/">"The Unreasonable Effectiveness of HTML for Claude Code."</a> His point — that HTML output gives you scannable, interactive pages that feel like tools instead of chat transcripts — is what makes living docs and decision logs actually worth shipping. We took the insight and built the workflows that compound the longest.
+        The four HTML skills exist because Thariq Shihipar wrote <a href="https://thariqs.github.io/html-effectiveness/">"The Unreasonable Effectiveness of HTML for Claude Code."</a> His point — that HTML output gives you scannable, interactive pages instead of chat transcripts — is what makes living docs, decision logs, design directions, and roadmaps actually worth shipping. We took the insight and built the four workflows that compound the longest, plus the cross-tool plumbing to keep them honest.
         <span class="source">— credit to <a href="https://x.com/trq212">@trq212</a> for the article and the design tokens we reuse.</span>
       </div>
-    </section>
-
-    <section aria-labelledby="try-heading">
-      <h2 id="try-heading">Try it</h2>
-      <div class="install" role="region" aria-label="Install command (repeated)">
-        <span class="prompt" aria-hidden="true">$</span>
-        <code>npx haac-aikit</code>
-      </div>
-      <p>30-second wizard. Writes <code>.aikitrc.json</code> you can commit. The full kit also installs cross-tool rules, safety hooks, agents, and CI templates — but <code>/docs</code> and <code>/decide</code> are the two skills you'll reach for every week.</p>
     </section>
 
     <footer class="footer" role="contentinfo">
@@ -414,10 +587,11 @@
         <a href="https://www.npmjs.com/package/haac-aikit">npm</a>
         <a href="https://github.com/Hamad-Center/haac-aikit">github</a>
         <a href="https://github.com/Hamad-Center/haac-aikit/blob/main/CHANGELOG.md">changelog</a>
-        <a href="https://thariqs.github.io/html-effectiveness/">templates source</a>
+        <a href="https://github.com/Hamad-Center/haac-aikit/issues/1">try-it sign-up</a>
       </div>
-      <div>Built on <a href="https://x.com/trq212">@trq212</a>'s work. MIT.</div>
+      <div>Pre-1.0. Built on <a href="https://x.com/trq212">@trq212</a>'s work. MIT.</div>
     </footer>
+
   </main>
 </body>
 </html>

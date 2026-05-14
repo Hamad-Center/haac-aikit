@@ -1,36 +1,22 @@
 {
   "$schema": "https://raw.githubusercontent.com/Hamad-Center/haac-aikit/main/schema/aikit-rules.schema.json",
   "version": 1,
-  "comment": "Maps rule IDs (in AGENTS.md / .claude/rules/*.md) to machine-checkable patterns. The PostToolUse hook reads this to detect violations in just-written files. Pattern-checkable rules are a SUBSET of all rules — many rules can only be observed (loaded/cited) but not auto-validated. Add your own; remove what you don't want.",
+  "comment": "Maps rule IDs (in AGENTS.md / .claude/rules/*.md) to machine-checkable patterns. The PostToolUse hook reads this to detect violations in just-written files. The rules below are a starter set — language-agnostic safety patterns + a TypeScript example to copy. Add patterns for your stack and delete what you don't need.",
   "rules": [
     {
+      "id": "security.no-hardcoded-secrets",
+      "title": "No hardcoded API keys, tokens, or passwords",
+      "pattern": "(?i)(api[_-]?key|secret|token|password|access[_-]?key)\\s*[:=]\\s*['\"][A-Za-z0-9_\\-]{16,}['\"]",
+      "fileGlobs": ["**/*"],
+      "exclude": ["**/*.test.*", "**/*.spec.*", "**/fixtures/**", "**/__mocks__/**", "**/node_modules/**"],
+      "severity": "error"
+    },
+    {
       "id": "code-style.no-console-log",
-      "title": "No console.log in production code",
+      "title": "Example: no console.log in production code (TypeScript / JavaScript)",
       "pattern": "(?<!//\\s)console\\.log\\(",
       "fileGlobs": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx"],
-      "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],
-      "severity": "warn"
-    },
-    {
-      "id": "code-style.no-default-export",
-      "title": "Use named exports, not default",
-      "pattern": "^\\s*export\\s+default\\b",
-      "fileGlobs": ["src/**/*.ts", "src/**/*.tsx"],
-      "severity": "warn"
-    },
-    {
-      "id": "code-style.no-any",
-      "title": "Use unknown + type guards, not any",
-      "pattern": ":\\s*any\\b|<any>|as\\s+any\\b",
-      "fileGlobs": ["src/**/*.ts", "src/**/*.tsx"],
-      "exclude": ["**/*.d.ts"],
-      "severity": "warn"
-    },
-    {
-      "id": "code-style.no-ts-ignore-without-comment",
-      "title": "@ts-ignore must include a reason",
-      "pattern": "@ts-ignore(?!\\s*[—:-])",
-      "fileGlobs": ["src/**/*.ts", "src/**/*.tsx"],
+      "exclude": ["**/*.test.*", "**/*.spec.*"],
       "severity": "warn"
     }
   ]

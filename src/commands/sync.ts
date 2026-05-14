@@ -3,12 +3,23 @@ import { readConfig, writeConfig } from "../fs/readConfig.js";
 import { safeWrite } from "../fs/safeWrite.js";
 import { ensureGitignoreEntries } from "../fs/gitignore.js";
 import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
-import { resolveShapeAgents } from "../catalog/shape-agents.js";
 import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync, chmodSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
 import { interpolate } from "../render/template.js";
 import { extractMarkerRegion } from "../render/markers.js";
+import {
+  parseFrontmatter,
+  skillToCursorMdc,
+  skillToWindsurfRule,
+  skillToCopilotInstruction,
+  skillToGeminiCommand,
+  agentToCopilotAgent,
+  agentToCodexToml,
+  buildCursorHooksJson,
+  buildCodexConfigToml,
+  buildSkillsIndex,
+} from "../render/translators.js";
 import { interactivePrompt, inferTier3Slot, type ConflictPrompt } from "../fs/conflict.js";
 import type { CliArgs, WriteResult, WriteOpts, AikitConfig, ConflictResolution } from "../types.js";
 
@@ -22,7 +33,7 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
     process.exit(1);
   }
 
-  p.log.info(`Syncing from .aikitrc.json (scope: ${config.scope})`);
+  p.log.info(`Syncing from .aikitrc.json`);
 
   const catalog = loadCatalog();
   const results: WriteResult[] = [];
@@ -39,88 +50,137 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
   const agentsMdManaged = extractMarkerRegion(agentsMdContent, "AGENTS.md") ?? agentsMdContent;
   results.push(safeWrite("AGENTS.md", agentsMdContent, { ...opts, useMarkers: true, managedContent: agentsMdManaged }));
 
+  // Load skills + agents from catalog once — each per-tool block translates them.
+  const allSkills = loadSkillsFromCatalog();
+  const allAgents = loadAgentsFromCatalog(config);
+  const installedHookNames = listHookFiles();
+
+  // ---------- Claude Code ----------
   if (config.tools.includes("claude")) {
     results.push(safeWrite("CLAUDE.md", catalog.claudeMd(), { ...opts, useMarkers: false }));
     results.push(safeWrite(".claude/settings.json", catalog.settingsJson(), { ...opts, useMarkers: false }));
-    if (config.scope !== "minimal") {
-      results.push(safeWrite("docs/claude-md-reference.md", catalog.claudeMdReference(), { ...opts, useMarkers: false }));
-      results.push(safeWrite(".claude/aikit-rules.json", catalog.aikitRulesJson(), { ...opts, useMarkers: false }));
-      results.push(...syncDir("rules/claude-rules", ".claude/rules", opts, [".md"]));
-    }
-  }
-  if (config.tools.includes("copilot")) {
-    results.push(safeWrite(".github/copilot-instructions.md", catalog.copilotInstructions(), { ...opts, useMarkers: false }));
-  }
-  if (config.tools.includes("cursor")) {
-    // Phase 2: dialect-aware translation. Parse the canonical AGENTS.md and
-    // emit Cursor's MDC format with rules extracted, instead of a generic shim.
-    const ruleSet = parseRuleSet(agentsMdContent, config.projectName, config.projectDescription ?? "");
-    const cursorContent = translateForCursor(ruleSet);
-    results.push(safeWrite(".cursor/rules/000-base.mdc", cursorContent, { ...opts, useMarkers: false }));
-  }
-  if (config.tools.includes("windsurf")) {
-    results.push(safeWrite(".windsurf/rules/project.md", catalog.windsurfRules(), { ...opts, useMarkers: false }));
-  }
-  if (config.tools.includes("aider")) {
-    results.push(safeWrite("CONVENTIONS.md", catalog.aiderConventions(), { ...opts, useMarkers: false }));
-    results.push(safeWrite(".aider.conf.yml", catalog.aiderConf(), { ...opts, useMarkers: false }));
-  }
-  if (config.tools.includes("gemini")) {
-    results.push(safeWrite("GEMINI.md", catalog.geminiMd(), { ...opts, useMarkers: false }));
-  }
+    results.push(safeWrite(".claude/aikit-rules.json", catalog.aikitRulesJson(), { ...opts, useMarkers: false }));
+    results.push(...syncDir("rules/claude-rules", ".claude/rules", opts, [".md"]));
 
-  // MCP
-  if (config.integrations.mcp && config.tools.includes("claude")) {
-    results.push(safeWrite(".mcp.json", catalog.mcpJson(), { ...opts, useMarkers: false }));
-  }
-
-  // Skills
-  if (config.scope !== "minimal") {
     results.push(...syncSkills("tier1", opts));
     results.push(...syncSkills("tier2", opts));
+    if (config.integrations.hooks) results.push(...syncHooks(opts));
+    if (config.integrations.subagents) results.push(...syncAgents(config, opts));
+    if (config.integrations.commands) results.push(...syncCommands(opts));
+    if (config.integrations.mcp) {
+      results.push(safeWrite(".mcp.json", catalog.mcpJson(), { ...opts, useMarkers: false }));
+    }
   }
 
-  // Templates — currently only html-artifacts. Synced to .aikit/templates/
-  // (not .claude/) because templates are tool-agnostic — any agent or human
-  // reading them can produce HTML, no per-tool translation needed.
-  if (config.scope !== "minimal") {
-    results.push(...syncTemplates(opts));
+  // ---------- Cursor ----------
+  if (config.tools.includes("cursor")) {
+    const ruleSet = parseRuleSet(agentsMdContent, config.projectName, config.projectDescription ?? "");
+    results.push(safeWrite(".cursor/rules/000-base.mdc", translateForCursor(ruleSet), { ...opts, useMarkers: false }));
+
+    // Each skill becomes a Cursor rule that auto-loads on description match.
+    for (const skill of allSkills) {
+      const name = skill.frontmatter["name"];
+      if (!name) continue;
+      results.push(safeWrite(`.cursor/rules/skill-${name}.mdc`, skillToCursorMdc(skill), { ...opts, useMarkers: false }));
+    }
+
+    // Cursor 1.7+ hooks. Copy the safety shell scripts to .cursor/hooks/ and
+    // wire them through .cursor/hooks.json so Cursor invokes them via stdio.
+    if (config.integrations.hooks) {
+      const srcDir = join(CATALOG_ROOT, "hooks");
+      const destDir = ".cursor/hooks";
+      if (existsSync(srcDir)) {
+        if (!dryRun) mkdirSync(destDir, { recursive: true });
+        for (const file of installedHookNames) {
+          results.push(copyAction(join(srcDir, file), join(destDir, file), opts));
+        }
+        results.push(safeWrite(".cursor/hooks.json", buildCursorHooksJson(installedHookNames), { ...opts, useMarkers: false }));
+      }
+    }
+
+    if (config.integrations.mcp) {
+      results.push(safeWrite(".cursor/mcp.json", catalog.mcpJson(), { ...opts, useMarkers: false }));
+    }
   }
 
-  // Hooks
-  if (config.integrations.hooks) {
-    results.push(...syncHooks(opts));
+  // ---------- Windsurf ----------
+  if (config.tools.includes("windsurf")) {
+    results.push(safeWrite(".windsurf/rules/project.md", catalog.windsurfRules(), { ...opts, useMarkers: false }));
+    for (const skill of allSkills) {
+      const name = skill.frontmatter["name"];
+      if (!name) continue;
+      results.push(safeWrite(`.windsurf/rules/skill-${name}.md`, skillToWindsurfRule(skill), { ...opts, useMarkers: false }));
+    }
   }
 
-  // Agents
-  if (config.integrations.subagents) {
-    results.push(...syncAgents(config, opts));
+  // ---------- Copilot ----------
+  if (config.tools.includes("copilot")) {
+    results.push(safeWrite(".github/copilot-instructions.md", catalog.copilotInstructions(), { ...opts, useMarkers: false }));
+
+    for (const skill of allSkills) {
+      const name = skill.frontmatter["name"];
+      if (!name) continue;
+      results.push(safeWrite(`.github/instructions/${name}.instructions.md`, skillToCopilotInstruction(skill), { ...opts, useMarkers: false }));
+    }
+
+    if (config.integrations.subagents) {
+      for (const agent of allAgents) {
+        const name = agent.frontmatter["name"];
+        if (!name) continue;
+        results.push(safeWrite(`.github/agents/${name}.agent.md`, agentToCopilotAgent(agent), { ...opts, useMarkers: false }));
+      }
+    }
   }
 
-  // Commands
-  if (config.integrations.commands) {
-    results.push(...syncCommands(opts));
+  // ---------- Codex ----------
+  if (config.tools.includes("codex")) {
+    // AGENTS.md is already canonical for Codex — no separate shim needed.
+    if (config.integrations.subagents) {
+      for (const agent of allAgents) {
+        const name = agent.frontmatter["name"];
+        if (!name) continue;
+        results.push(safeWrite(`.codex/agents/${name}.toml`, agentToCodexToml(agent), { ...opts, useMarkers: false }));
+      }
+    }
+    // Codex config.toml always ships when codex is selected: it carries the
+    // [features] codex_hooks flag, [agents] concurrency caps, and (if MCP is
+    // enabled) the [mcp_servers.*] tables.
+    const mcpJson = config.integrations.mcp ? catalog.mcpJson() : "{}";
+    results.push(safeWrite(".codex/config.toml", buildCodexConfigToml(mcpJson), { ...opts, useMarkers: false }));
   }
 
-  // CI
+  // ---------- Gemini ----------
+  if (config.tools.includes("gemini")) {
+    results.push(safeWrite("GEMINI.md", catalog.geminiMd(), { ...opts, useMarkers: false }));
+    // HTML-artifact skills get namespaced under html/ so they invoke as
+    // /html:docs etc. Other skills go in the root commands/ dir.
+    // Per https://geminicli.com/docs/cli/custom-commands — subdir = namespace.
+    const htmlSkillNames = new Set(["docs", "decide", "directions", "roadmap"]);
+    for (const skill of allSkills) {
+      const name = skill.frontmatter["name"];
+      if (!name) continue;
+      const subdir = htmlSkillNames.has(name) ? "html/" : "";
+      results.push(safeWrite(`.gemini/commands/${subdir}${name}.toml`, skillToGeminiCommand(skill), { ...opts, useMarkers: false }));
+    }
+  }
+
+  // ---------- Aider ----------
+  if (config.tools.includes("aider")) {
+    // Aider has no rule loader. Ship CONVENTIONS.md with a skills index
+    // appended so users see what's available; they paste a skill body into
+    // chat when its `When to use` clause matches their task.
+    const base = catalog.aiderConventions();
+    const augmented = base.replace(/<!-- END:haac-aikit -->/, buildSkillsIndex(allSkills) + "<!-- END:haac-aikit -->");
+    results.push(safeWrite("CONVENTIONS.md", augmented, { ...opts, useMarkers: false }));
+    results.push(safeWrite(".aider.conf.yml", catalog.aiderConf(), { ...opts, useMarkers: false }));
+  }
+
+  // ---------- Tool-agnostic surfaces ----------
+  // Templates: tool-agnostic — any agent or human can read them.
+  results.push(...syncTemplates(opts));
+
   if (config.integrations.ci) {
     results.push(...syncCI(opts));
-  }
-
-  // Everything tier
-  if (config.integrations.devcontainer) {
-    results.push(...syncDir("devcontainer", ".devcontainer", opts, [".json"]));
-  }
-  if (config.integrations.otel) {
-    results.push(safeWrite(".env.example", readCatalogFile("settings/env.example"), { dryRun, useMarkers: false }));
-  }
-  if (config.integrations.husky) {
-    results.push(...syncDir("husky", ".husky", opts, []));
-  }
-  if (config.integrations.plugin) {
-    const tmpl = readCatalogFile("plugin/plugin.json");
-    const content = interpolate(tmpl, { projectName: config.projectName });
-    results.push(safeWrite(".claude/plugin/plugin.json", content, { ...opts, useMarkers: false }));
   }
 
   ensureGitignoreEntries(dryRun);
@@ -230,6 +290,16 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
     p.log.warn(`${remainingConflicts.length} conflict(s) skipped (use --force to overwrite)`);
   }
 
+  // Codex silently drops .codex/* config in untrusted projects. Surface a
+  // post-sync reminder so users don't think their hooks/agents are wired and
+  // then wonder why nothing fires. See docs/observability for details.
+  if (config.tools.includes("codex")) {
+    p.log.info(
+      "Codex: trust this project to enable .codex/ (config.toml, agents/, hooks). " +
+      "Untrusted projects silently skip the project-local layer."
+    );
+  }
+
   p.outro("Sync complete.");
 }
 
@@ -260,6 +330,52 @@ export function copyAction(
     }
   }
   return { path: destPath, action: existed ? "updated" : "created", src: srcPath };
+}
+
+/** Read every skill from the catalog (tier1 + tier2) and parse its frontmatter. */
+function loadSkillsFromCatalog(): ReturnType<typeof parseFrontmatter>[] {
+  const out: ReturnType<typeof parseFrontmatter>[] = [];
+  for (const tier of ["tier1", "tier2"] as const) {
+    const dir = join(CATALOG_ROOT, "skills", tier);
+    if (!existsSync(dir)) continue;
+    for (const file of readdirSync(dir).filter((f) => f.endsWith(".md"))) {
+      const content = readFileSync(join(dir, file), "utf8");
+      out.push(parseFrontmatter(content));
+    }
+  }
+  return out;
+}
+
+/**
+ * Read agents the user has opted into from the catalog and parse them. Mirrors
+ * the selection logic in syncAgents (tier1 = all by default, tier2 = explicit
+ * list or 'all').
+ */
+function loadAgentsFromCatalog(config: AikitConfig): ReturnType<typeof parseFrontmatter>[] {
+  const out: ReturnType<typeof parseFrontmatter>[] = [];
+  const tier1Sel = config.agents?.tier1 ?? "all";
+  const tier2Sel = resolveTier2Set(config);
+
+  for (const [tier, selection] of [["tier1", tier1Sel], ["tier2", tier2Sel]] as const) {
+    const dir = join(CATALOG_ROOT, "agents", tier);
+    if (!existsSync(dir)) continue;
+    const allNames = readdirSync(dir)
+      .filter((f) => f.endsWith(".md"))
+      .map((f) => f.replace(/\.md$/, ""));
+    const include = selection === "all" ? allNames : allNames.filter((a) => selection.includes(a));
+    for (const name of include) {
+      const content = readFileSync(join(dir, `${name}.md`), "utf8");
+      out.push(parseFrontmatter(content));
+    }
+  }
+  return out;
+}
+
+/** Names of every hook shell script in the catalog (for hooks.json wiring). */
+function listHookFiles(): string[] {
+  const dir = join(CATALOG_ROOT, "hooks");
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((f) => f.endsWith(".sh"));
 }
 
 function syncSkills(tier: "tier1" | "tier2", opts: WriteOpts): WriteResult[] {
@@ -333,14 +449,7 @@ function syncAgents(config: AikitConfig, opts: WriteOpts): WriteResult[] {
 
 function resolveTier2Set(config: AikitConfig): "all" | string[] {
   if (config.agents?.tier2 === "all") return "all";
-
-  const set = new Set<string>(
-    Array.isArray(config.agents?.tier2) ? config.agents.tier2 : []
-  );
-  for (const agent of resolveShapeAgents(config.shape)) {
-    set.add(agent);
-  }
-  return Array.from(set);
+  return Array.isArray(config.agents?.tier2) ? config.agents.tier2 : [];
 }
 
 function syncAgentTier(

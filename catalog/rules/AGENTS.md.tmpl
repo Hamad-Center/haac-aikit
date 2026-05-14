@@ -53,9 +53,9 @@ TODO: Project-specific security notes.
      The .claude/ path name is historical; the content there is tool-agnostic. -->
 
 - <!-- id: skills.read-on-match --> Skill instructions live at `.claude/skills/*.md`. When a task matches a skill's `## When to use` rules, **read that skill before producing output** — it ships pattern-specific techniques and protocols that this file does not repeat.
-- <!-- id: skills.html-artifacts --> For HTML artifact production (specs, plans, PR reviews, design systems, prototypes, diagrams, decks, research explainers, reports, custom editing interfaces): the `html-artifacts` skill at `.claude/skills/html-artifacts.md` is **mandatory**. Forked reference templates live at `.aikit/templates/html-artifacts/` with a machine-readable `MANIFEST.json`. **Read the matching template first** before writing; do not invent HTML structure from scratch.
-- <!-- id: skills.scaffold-cli --> User-driven scaffolding: `aikit scaffold html <slug>` drops a starter template into the current directory. Run `aikit scaffold html --list` to see all 20.
-- <!-- id: artifacts.output-path --> Filled artifacts go to `.aikit/artifacts/NN-<slug>.html` (incrementing `NN`). Regenerate `.aikit/artifacts/index.html` after each write; the gallery is auto-maintained.
+- <!-- id: skills.html-artifacts --> For HTML artifact production, this kit ships four skills under `.claude/skills/`: `docs` (living project documentation tree at `docs/`), `decide` (single-page tradeoff doc under `docs/decisions/`), `directions` (2-4 live-rendered visual design variants under `docs/directions/`), and `roadmap` (single-page implementation roadmap under `docs/roadmaps/`). Each skill has a matching slash command (`/docs`, `/decide`, `/directions`, `/roadmap`) and a reference template under `.aikit/templates/<name>/`. **Read the matching template first** before writing; do not invent HTML structure from scratch.
+- <!-- id: skills.html-install --> Install or refresh just the HTML-artifact bundle (skills + commands + templates) with `aikit add --html`. Run `aikit list` to see what's already installed.
+- <!-- id: artifacts.output-path --> HTML artifacts go to `docs/<file>.html` (docs), `docs/decisions/YYYY-MM-DD-<slug>.html` (decide), `docs/directions/YYYY-MM-DD-<slug>.html` (directions), or `docs/roadmaps/YYYY-MM-DD-<slug>.html` (roadmap). All four are committed to git as a permanent log.
 
 ## Gotchas
 <!-- High-signal section. Add things the agent repeatedly gets wrong.
@@ -72,6 +72,5 @@ TODO
 Always preserve: the full list of files modified this session, any failing test names + error messages, and the current task being worked on.
 
 ## Further reading
-- `docs/claude-md-reference.md` — Anthropic 2026 reference for CLAUDE.md / memory / `.claude/rules/` (shipped by `aikit` when `claude` is selected at scope ≥ standard).
 - `.claude/rules/` — drop topic-scoped or path-scoped rule files here (see the example shipped with this kit). Path-scoped rules load only when Claude reads matching files, saving context.
 <!-- END:haac-aikit -->
