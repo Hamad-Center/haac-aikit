@@ -4,7 +4,62 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The CLI surfaces these notes via `aikit whatsnew` (reads `catalog/release-notes.json`) and, when a newer version is on npm, prints a one-line banner once per 24h.
+## [0.12.0] - 2026-05-14
+
+A two-axis release: **catalog trim** (sharper kit, less always-on token cost) and **cross-tool parity** (skills, agents, hooks, MCP now fan out to every selected tool in its native format — not just Claude Code). Plus two new HTML skills.
+
+### Added
+- **`/directions` skill** (`catalog/skills/tier1/directions.md`) — renders 2-4 visual design variants side by side on a single self-contained HTML page, with a light/dark stage toggle. Output: `docs/directions/<date>-<slug>.html`. Based on the visual exploration pattern in [Thariq Shihipar's HTML effectiveness gallery](https://thariqs.github.io/html-effectiveness/).
+- **`/roadmap` skill** (`catalog/skills/tier1/roadmap.md`) — single-page implementation plan: milestones, SVG data-flow diagram, mockups, key code, risk table, open questions. Output: `docs/roadmaps/<date>-<slug>.html`. For hand-off to a human implementer (the AI-executable text plan is `writing-plans`).
+- **`aikit add --html`** — single-shot install of the four HTML-artifact skills (`docs`, `decide`, `directions`, `roadmap`) plus their slash commands and templates. 12 files in one command.
+- **Cross-tool translators** (`src/render/translators.ts`) — convert catalog skill / agent / hook / MCP content into each selected tool's native loader format. New per-tool installation surface:
+  - **Cursor**: `.cursor/rules/skill-<name>.mdc` for each skill (description-triggered auto-load), `.cursor/hooks.json` with 10 wired events (safety with `failClosed: true` + `matcher` regex scoping, plus telemetry parity: `preToolUse`/`postToolUse`/`subagentStart`/`subagentStop`/`preCompact`/`stop`/`afterFileEdit`), `.cursor/mcp.json` for MCP servers.
+  - **Windsurf**: `.windsurf/rules/skill-<name>.md` for each skill with `trigger: model_decision`. Built-in 12k-char guard truncates gracefully at paragraph boundaries and appends a pointer to the canonical body.
+  - **Copilot**: `.github/instructions/<name>.instructions.md` for skills (`applyTo: '**'`), `.github/agents/<name>.agent.md` for agents (with `user-invocable: true` so `@<agent>` dispatch works).
+  - **Codex**: `.codex/agents/<name>.toml` for subagents, `.codex/config.toml` with `[features] codex_hooks = true`, `[agents]` concurrency caps (max_threads / max_depth / job_max_runtime_seconds), and `[mcp_servers.*]` translated from `.mcp.json`.
+  - **Gemini**: `.gemini/commands/<name>.toml` for manual `/skill` invocation. HTML skills (`docs`, `decide`, `directions`, `roadmap`) are namespaced under `html/` → invoked as `/html:docs`, `/html:decide`, etc.
+  - **Aider**: appended skills index in `CONVENTIONS.md` (no native rule loader; user copies a skill body into chat when its `When to use` clause matches).
+- **Codex trust warning** — post-sync info line flags that Codex silently drops `.codex/*` in untrusted projects, so users see the requirement instead of debugging silent failure later.
+- **Decision artifact** (`docs/decisions/2026-05-14-pre-publish-cleanup.html`) — dogfoods the `/decide` skill to document the trim choices made for this release.
+
+### Changed
+- **`/decide` skill promoted tier2 → tier1** alongside `/docs`, `/directions`, `/roadmap`. All four HTML skills now always-on.
+- **Demoted rarely-firing skills tier1 → tier2** (-282 lines always-on context): `api-design`, `software-architect`, `performance-profiling`, `incident-response`. All four were already opt-in by description, so demotion changes only their preload status.
+- **Per-tool installation surface reorganized**: previously skills/agents/hooks/commands always wrote to `.claude/` regardless of tool selection. Now each tool block in `sync.ts` is self-contained — pick `--tools=cursor` and get only `.cursor/`, no `.claude/` ballast.
+- **`aikit-rules.json` patterns trimmed** — was 4 TypeScript-specific rules; now ships one universal `security.no-hardcoded-secrets` pattern plus one TS example to demonstrate the schema. Less locked into a single language.
+- **`AGENTS.md.tmpl` skills + templates section rewritten** to reference the four current HTML skills (`docs`, `decide`, `directions`, `roadmap`) instead of the now-removed `html-artifacts` and `aikit scaffold html` references.
+- **README + GitHub Pages landing redesigned** — single-column scannable layout, three SVG diagrams (HTML skills fan-out, cross-tool dialect translation, observability loop), 6 tier1 chip rows for the catalog, plain-English feature descriptions with category tags.
+
+### Removed (breaking — pre-1.0)
+- **17 redundant agents.** Tier1 dropped from 13 → 2 (`orchestrator`, `pr-describer`). 8 agents that duplicated skills (debugger/planner/implementer/reviewer/tester/researcher/security-auditor/architect — pick the cross-tool skill, lose the Claude-only agent), 3 niche specialists (data-migration/devops/technical-writer), 6 tier2 (changelog-curator/dependency-upgrader/evals-author/flake-hunter/prompt-engineer/simplifier).
+- **6 thin slash-command shims**: `/debug`, `/explore`, `/plan`, `/tdd`, `/execute`, `/review` — each was a 5-15 line file that said "use the X skill." Tier1 skills are already auto-loaded; the shim added zero value.
+- **`aikit learn` command** + `src/commands/learn.ts` (298 lines). PR-mining + clustering for rule proposals — substantial machinery for a workflow no real user had validated. Better to add back when someone asks for it.
+- **`aikit whatsnew` command** + `src/commands/whatsnew.ts` (96 lines) + `catalog/release-notes.json`. Generic release-notes viewer; GitHub Releases already does this.
+- **`src/notify.ts`** (159 lines) — once-per-day npm registry update banner. Niche; no other comparable kit ships one.
+- **Scope system** (`minimal` / `standard` / `everything`) — fully removed from `AikitConfig`, wizard, sync logic. Single default install + `aikit add` for extras.
+- **Project-shape system** (`web` / `mobile` / `fullstack` / `backend` / `library`) — fully removed. Shape-derived agent install (`SHAPE_AGENTS` map) deleted; agent selection now goes through `agents.tier2` explicit list or `"all"`.
+- **Integration values dropped**: `devcontainer`, `husky`, `plugin`, `otel`. The corresponding `catalog/devcontainer/`, `catalog/husky/`, `catalog/plugin/` directories are gone. Generic CI workflows (`ci.yml`, `secret-scan.yml`) removed; AI-aligned workflows (`claude.yml` `@claude` responder, `aikit-rules.yml`, `agents-md-sync.yml`) retained.
+- **`claude-md-improver` skill** — Claude-specific in a cross-tool kit. Out of scope.
+- **`docs/claude-md-reference.md`** + `catalog/docs/claude-md-reference.md` + `claudeMdReference()` catalog getter — Claude-specific Anthropic 2026 reference doc. Better hosted upstream than bundled.
+- **`format-on-save.sh` hook** — generic dev tooling, not AI-specific.
+- **`docs/learn.md`** — companion doc for the removed `aikit learn` command.
+- **`shape-agents.ts`** + its test.
+
+### Migration
+1. **Upgrade**: `npm install -g haac-aikit@0.12.0` (or `npx haac-aikit@0.12.0`).
+2. **Re-run the wizard**: `npx haac-aikit` — your existing `.aikitrc.json` will fail schema validation because `scope`, `shape`, and the four removed `integrations` keys are gone. Re-running writes a fresh config in the new shape.
+3. **Clean stale outputs**: if your project has `.devcontainer/`, `.husky/`, `.claude/plugin/` directories from previous installs and you don't use them outside of haac-aikit, remove them manually — they're orphaned.
+4. **Pick your tools**: each selected tool now gets its own native files, not a shared `.claude/`. `--tools=cursor` → 37 files in `.cursor/`. `--tools=codex` → 6 files in `.codex/`. `--tools=claude,cursor,codex` → all three surfaces installed.
+5. **Slash commands that disappeared**: if you previously used `/debug`, `/explore`, `/plan`, `/tdd`, `/execute`, `/review` — the underlying skills (`systematic-debugging`, `codebase-exploration`, `writing-plans`, `test-driven-development`, `executing-plans`, `requesting-code-review`) are still tier1 and auto-trigger from prompts. The shim wasn't carrying weight.
+
+### Stats
+- Source: **4,182 → 2,802 lines** (-33%)
+- CLI bundle: **160 KB → 148 KB** (-7%)
+- Tier1 skills: 18 → 14
+- Tier1 agents: 13 → 2
+- Catalog files: ~120 → ~80
+- Tests: 168 → 144 (24 deleted for cut features; **14 new translator tests**)
+- All quality gates green: typecheck, catalog-check, **144/144 tests**, build, smoke test
 
 ## [0.11.1] - 2026-05-13
 
