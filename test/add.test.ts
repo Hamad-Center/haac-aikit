@@ -82,6 +82,37 @@ describe("aikit add — config persistence", () => {
   });
 });
 
+describe("aikit add — path-traversal guard (security)", () => {
+  it("rejects names containing path separators", async () => {
+    writeConfig(baseConfig);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+    await expect(runAdd({ _: ["add", "../../../etc/passwd"] } as never)).rejects.toThrow("process.exit(1)");
+    expect(existsSync(".claude/skills/../../../etc/passwd.md")).toBe(false);
+    exitSpy.mockRestore();
+  });
+
+  it("rejects names with backslash", async () => {
+    writeConfig(baseConfig);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+    await expect(runAdd({ _: ["add", "foo\\bar"] } as never)).rejects.toThrow("process.exit(1)");
+    exitSpy.mockRestore();
+  });
+
+  it("rejects names with leading dot or special chars", async () => {
+    writeConfig(baseConfig);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+    await expect(runAdd({ _: ["add", "..hidden"] } as never)).rejects.toThrow("process.exit(1)");
+    await expect(runAdd({ _: ["add", "foo$bar"] } as never)).rejects.toThrow("process.exit(1)");
+    exitSpy.mockRestore();
+  });
+});
+
 describe("aikit add --html — HTML-artifact bundle", () => {
   const expectedSkills = ["docs", "decide", "directions", "roadmap"];
   const expectedTemplates = [

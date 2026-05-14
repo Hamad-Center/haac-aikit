@@ -130,6 +130,12 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
         results.push(safeWrite(`.github/agents/${name}.agent.md`, agentToCopilotAgent(agent), { ...opts, useMarkers: false }));
       }
     }
+
+    // Copilot in VS Code reads MCP servers from .vscode/mcp.json.
+    // Per https://code.visualstudio.com/docs/copilot/customization/mcp-servers
+    if (config.integrations.mcp) {
+      results.push(safeWrite(".vscode/mcp.json", catalog.mcpJson(), { ...opts, useMarkers: false }));
+    }
   }
 
   // ---------- Codex ----------
@@ -161,6 +167,11 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
       if (!name) continue;
       const subdir = htmlSkillNames.has(name) ? "html/" : "";
       results.push(safeWrite(`.gemini/commands/${subdir}${name}.toml`, skillToGeminiCommand(skill), { ...opts, useMarkers: false }));
+    }
+    // Gemini reads MCP servers from .gemini/settings.json `mcpServers`.
+    // Per https://geminicli.com/docs/tools/mcp-server
+    if (config.integrations.mcp) {
+      results.push(safeWrite(".gemini/settings.json", catalog.mcpJson(), { ...opts, useMarkers: false }));
     }
   }
 

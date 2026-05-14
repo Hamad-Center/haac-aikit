@@ -81,10 +81,10 @@ describe("skill translators", () => {
     expect(inst).toContain("applyTo: '**'");
   });
 
-  it("Gemini command emits TOML with prompt block", () => {
+  it("Gemini command emits TOML with prompt block (literal-string by default)", () => {
     const cmd = skillToGeminiCommand(skill);
     expect(cmd).toContain('description = "Use when documentation drifts."');
-    expect(cmd).toContain('prompt = """');
+    expect(cmd).toContain("prompt = '''");
     expect(cmd).toContain("## When to use");
   });
 });
@@ -101,11 +101,11 @@ describe("agent translators", () => {
     expect(out).toContain("- Read");
   });
 
-  it("Codex TOML uses developer_instructions for the body", () => {
+  it("Codex TOML uses developer_instructions with literal-string by default", () => {
     const out = agentToCodexToml(agent);
     expect(out).toContain('name = "orchestrator"');
     expect(out).toContain('description = "Dispatches specialists."');
-    expect(out).toContain('developer_instructions = """');
+    expect(out).toContain("developer_instructions = '''");
     expect(out).toContain("# Orchestrator");
   });
 });
@@ -200,15 +200,14 @@ describe("Cursor hook entry fields and event surface", () => {
     expect(json.hooks.beforeReadFile[0].failClosed).toBe(true);
   });
 
-  it("scopes git hooks with a matcher regex", () => {
+  it("does NOT emit a matcher field (scripts self-filter to avoid Cursor schema drift)", () => {
     const json = JSON.parse(
       buildCursorHooksJson(["block-force-push-main.sh", "block-secrets-in-commits.sh"])
     );
     const events = json.hooks.beforeShellExecution as { matcher?: string; command: string }[];
-    const forcePushHook = events.find((e) => e.command.includes("force-push"));
-    const secretsHook = events.find((e) => e.command.includes("secrets"));
-    expect(forcePushHook?.matcher).toMatch(/git/);
-    expect(secretsHook?.matcher).toMatch(/git/);
+    for (const entry of events) {
+      expect(entry).not.toHaveProperty("matcher");
+    }
   });
 
   it("wires log-rule-event to 4 telemetry events for observability parity", () => {
@@ -250,10 +249,70 @@ describe("Codex config.toml", () => {
   });
 });
 
-describe("Copilot agent user-invocable flag", () => {
-  it("sets user-invocable: true so @-mention dispatch works", () => {
+describe("Copilot agent format compliance", () => {
+  it("does NOT include user-invocable (that's a skill field, not agent)", () => {
     const agent = parseFrontmatter(AGENT_FIXTURE);
     const out = agentToCopilotAgent(agent);
-    expect(out).toContain("user-invocable: true");
+    expect(out).not.toContain("user-invocable");
+  });
+
+  it("emits canonical agent fields: name, description, model, tools", () => {
+    const agent = parseFrontmatter(AGENT_FIXTURE);
+    const out = agentToCopilotAgent(agent);
+    expect(out).toMatch(/^---\nname: orchestrator/);
+    expect(out).toContain("description: Dispatches specialists.");
+    expect(out).toContain("model: claude-sonnet-4-6");
+    expect(out).toContain("- Agent");
+    expect(out).toContain("- Read");
+  });
+});
+
+describe("TOML literal-string output (no escape needed)", () => {
+  it("Codex agent body containing backslashes survives unescaped via literal strings", () => {
+    const skill = parseFrontmatter(`---
+name: pathy
+description: handles Windows paths
+---
+
+Read C:\\\\Users\\\\dev\\\\file.txt and never split on backslash.
+`);
+    const out = agentToCodexToml(skill);
+    expect(out).toContain("'''");
+    expect(out).toContain("C:\\\\Users\\\\dev\\\\file.txt");
+  });
+
+  it("Codex agent falls back to basic strings (\"\"\") when body contains '''", () => {
+    const agent = parseFrontmatter(`---
+name: literal
+description: x
+---
+
+Don't use ''' triple-quotes anywhere.
+`);
+    const out = agentToCodexToml(agent);
+    // Delimiter should be """ (basic string) — body still mentions ''' as content,
+    // so we check the delimiter shape specifically.
+    expect(out).toMatch(/developer_instructions = """/);
+    expect(out).not.toMatch(/developer_instructions = '''/);
+  });
+
+  it("Gemini command uses literal strings by default", () => {
+    const skill = parseFrontmatter(SKILL_FIXTURE);
+    const out = skillToGeminiCommand(skill);
+    expect(out).toContain("prompt = '''");
+  });
+});
+
+describe("Cursor MDC backslash escape", () => {
+  it("escapes backslashes in description so YAML stays valid", () => {
+    const skill = parseFrontmatter(`---
+name: pathy
+description: matches C:\\\\Users\\\\dev paths
+---
+
+body
+`);
+    const out = skillToCursorMdc(skill);
+    expect(out).toContain('description: "matches C:\\\\\\\\Users\\\\\\\\dev paths"');
   });
 });

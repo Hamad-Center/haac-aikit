@@ -42,6 +42,16 @@ export async function runAdd(argv: CliArgs): Promise<void> {
     process.exit(1);
   }
 
+  // Reject path-traversal attempts before we use the name in filesystem joins.
+  // Names are expected to be simple kebab-case slugs matching a catalog file.
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(itemArg)) {
+    p.log.error(
+      `Invalid item name "${itemArg}". Names must be kebab-case slugs ` +
+      `(letters, digits, hyphens, underscores). Run \`aikit list\` to see catalog items.`
+    );
+    process.exit(1);
+  }
+
   const found = findCatalogItem(itemArg);
   if (!found) {
     p.log.error(`"${itemArg}" not found in catalog.`);

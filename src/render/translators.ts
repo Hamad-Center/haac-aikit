@@ -78,7 +78,8 @@ export function parseFrontmatter(content: string): ParsedDoc {
  */
 export function skillToCursorMdc(skill: ParsedDoc): string {
   const description = skill.frontmatter["description"] ?? "";
-  const escaped = description.replace(/"/g, '\\"');
+  // Escape backslashes BEFORE quotes so we don't double-escape the escapes.
+  const escaped = description.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   return `---
 description: "${escaped}"
 alwaysApply: false
@@ -141,36 +142,58 @@ ${skill.body}
  * gives the user a portable command — the auto-trigger semantics are lost.
  *
  * Per https://geminicli.com/docs/cli/custom-commands/
+ *
+ * Uses TOML literal multi-line strings (`'''...'''`) when possible so
+ * backslashes in the body don't need escaping (TOML 1.0 §6: literal strings
+ * have NO escape processing). Falls back to basic strings only when the body
+ * contains the literal-string terminator `'''`.
  */
 export function skillToGeminiCommand(skill: ParsedDoc): string {
   const description = (skill.frontmatter["description"] ?? "").replace(/"/g, '\\"');
-  // Triple-quoted TOML string for the prompt body so newlines survive.
-  const body = skill.body.replace(/"""/g, '\\"""');
   return `description = "${description}"
-prompt = """
-${body}
-"""
+prompt = ${tomlMultiline(skill.body)}
 `;
+}
+
+/**
+ * Emit a TOML multi-line string for arbitrary text. Prefers literal strings
+ * (`'''`) which require no escaping; falls back to basic strings (`"""`)
+ * with backslash + triple-quote escaping when the body contains `'''`.
+ */
+function tomlMultiline(body: string): string {
+  if (!body.includes("'''")) {
+    // Literal multi-line — no escape processing. Newline immediately after
+    // the opening delimiter is trimmed by TOML (§6) so add one for legibility.
+    return `'''\n${body}\n'''`;
+  }
+  // Fall back to basic string — escape `\` then `"""` (order matters).
+  const escaped = body.replace(/\\/g, "\\\\").replace(/"""/g, '\\"\\"\\"');
+  return `"""\n${escaped}\n"""`;
 }
 
 /**
  * Build a Copilot custom agent file from a haac-aikit agent.
  *
- * Per https://code.visualstudio.com/docs/copilot/customization/custom-chat-modes
- * — the `.chatmode.md` extension is DEPRECATED; use `.agent.md` (we already do).
- * Sets `user-invocable: true` so users can @-mention the agent from chat,
- * which is the natural way to dispatch a specialist in Copilot.
+ * Per https://docs.github.com/en/copilot/reference/custom-agents-configuration —
+ * canonical `.agent.md` fields are `name`, `description`, `prompt`, `tools`,
+ * optionally `model`. `user-invocable` is a `.skill.md` field (a different
+ * file format for user-invoked workflows) and would be unrecognised here.
  *
- * Fields we don't translate yet:
- * - `argument-hint`: would need source data in the agent file
- * - `handoffs`: cross-agent dispatch — we don't model handoff graphs
- * - `mcp-servers`: tools per-agent — kit's MCP is workspace-scoped, not per-agent
+ * The agent body becomes the `prompt` content in the document body, which
+ * Copilot uses as the persona system prompt when this agent is auto-loaded
+ * by relevance. Auto-load semantics match Claude's subagent dispatch.
+ *
+ * Fields we don't translate yet (would need source data in catalog agent files):
+ * - `argument-hint`: hint shown in chat UI
+ * - `handoffs`: cross-agent dispatch graph (would map to our orchestrator
+ *   agent's role)
+ * - `mcp-servers`: per-agent MCP — kit's MCP is workspace-scoped
  */
 export function agentToCopilotAgent(agent: ParsedDoc): string {
   const name = agent.frontmatter["name"] ?? "";
   const description = agent.frontmatter["description"] ?? "";
   const model = agent.frontmatter["model"] ?? "";
-  const fm = [`name: ${name}`, `description: ${description}`, `user-invocable: true`];
+  const fm = [`name: ${name}`, `description: ${description}`];
   if (model) fm.push(`model: ${model}`);
   if (agent.toolsList && agent.toolsList.length > 0) {
     fm.push(`tools:`);
@@ -189,6 +212,9 @@ ${agent.body}
  * shape: `name`, `description`, `developer_instructions`, optional `model`.
  *
  * Per https://developers.openai.com/codex/subagents
+ *
+ * Uses TOML literal strings for `developer_instructions` (see tomlMultiline)
+ * so backslashes and special chars in agent bodies survive unescaped.
  */
 export function agentToCodexToml(agent: ParsedDoc): string {
   const name = agent.frontmatter["name"] ?? "";
@@ -196,12 +222,9 @@ export function agentToCodexToml(agent: ParsedDoc): string {
   // Codex doesn't recognise Anthropic model IDs — leave model unset and let
   // Codex pick its default. Mapping Claude IDs to OpenAI IDs is out of scope.
   const escapedDesc = description.replace(/"/g, '\\"');
-  const escapedBody = agent.body.replace(/"""/g, '\\"""');
   return `name = "${name}"
 description = "${escapedDesc}"
-developer_instructions = """
-${escapedBody}
-"""
+developer_instructions = ${tomlMultiline(agent.body)}
 `;
 }
 
@@ -210,16 +233,19 @@ ${escapedBody}
  *
  * Per https://cursor.com/docs/agent/hooks — Cursor 1.7+ exposes 21 events
  * spanning session lifecycle, tool execution, shell execution, MCP execution,
- * subagent dispatch, and prompt submission. The mapping below covers the
- * full surface we have hooks for.
+ * subagent dispatch, and prompt submission.
  *
  * Hook entry fields used:
- * - `command`: shell command to run
+ * - `command`: shell command to run (relative to project root)
  * - `failClosed`: true for safety hooks → if the hook errors or times out,
  *   Cursor BLOCKS the operation instead of allowing through. Without this,
  *   a buggy hook = safety-net bypassed.
- * - `matcher`: regex on the tool name (or shell command) to scope when this
- *   hook fires. Keeps the telemetry hooks from spinning on every event.
+ *
+ * Note on per-event filtering: our shell scripts self-filter (e.g.
+ * `block-force-push-main.sh` exits 0 immediately if the command isn't a force
+ * push). Cursor's `matcher` field schema has changed across versions and is
+ * documented inconsistently, so we omit it and trust the scripts. The perf
+ * cost is one fast `case` statement per shell command.
  */
 export function buildCursorHooksJson(installedHooks: string[]): string {
   const has = (name: string): boolean => installedHooks.includes(`${name}.sh`);
@@ -227,7 +253,6 @@ export function buildCursorHooksJson(installedHooks: string[]): string {
   interface HookEntry {
     command: string;
     failClosed?: boolean;
-    matcher?: string;
   }
   const hooks: Record<string, HookEntry[]> = {};
   const add = (event: string, entry: HookEntry): void => {
@@ -240,24 +265,16 @@ export function buildCursorHooksJson(installedHooks: string[]): string {
     add("beforeShellExecution", { command: ".cursor/hooks/block-dangerous-bash.sh", failClosed: true });
   }
   if (has("block-force-push-main")) {
-    add("beforeShellExecution", {
-      command: ".cursor/hooks/block-force-push-main.sh",
-      failClosed: true,
-      matcher: "^git\\s+push",
-    });
+    add("beforeShellExecution", { command: ".cursor/hooks/block-force-push-main.sh", failClosed: true });
   }
   if (has("block-secrets-in-commits")) {
-    add("beforeShellExecution", {
-      command: ".cursor/hooks/block-secrets-in-commits.sh",
-      failClosed: true,
-      matcher: "^git\\s+commit",
-    });
+    add("beforeShellExecution", { command: ".cursor/hooks/block-secrets-in-commits.sh", failClosed: true });
   }
   if (has("file-guard")) {
     add("beforeReadFile", { command: ".cursor/hooks/file-guard.sh", failClosed: true });
   }
 
-  // ----- Lifecycle: session start primes the AI with current rule state -----
+  // ----- Lifecycle -----
   if (has("session-start-prime")) {
     add("sessionStart", { command: ".cursor/hooks/session-start-prime.sh" });
   }
@@ -266,9 +283,6 @@ export function buildCursorHooksJson(installedHooks: string[]): string {
   }
 
   // ----- Telemetry: observability parity with Claude Code -----
-  // log-rule-event fires on every tool call to record what rules loaded.
-  // check-pattern-violations runs after a file edit to scan for rule misses.
-  // judge-rule-compliance runs on stop to score adherence (optional, costs API calls).
   if (has("log-rule-event")) {
     add("preToolUse", { command: ".cursor/hooks/log-rule-event.sh" });
     add("postToolUse", { command: ".cursor/hooks/log-rule-event.sh" });
