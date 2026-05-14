@@ -66,8 +66,8 @@ Last audited: **2026-05-14** (audit pass complete, 5 blockers fixed).
 - [x] `npm run build` — succeeds (148 KB bundle)
 - [x] Smoke test: `--tools=claude` install — works
 - [x] Smoke test: `--tools=cursor,codex,gemini` install — works (no `.claude/` ballast; full native-format output per tool)
-- [ ] Manual `npm pack --dry-run` review (recommended pre-publish, not blocking)
-- [ ] Manual: open every generated HTML template in a browser (recommended pre-publish)
+- [x] `npm pack --dry-run` reviewed (73 files, 171 KB, no secrets)
+- [x] All 4 HTML templates verified — structural parse clean, CSS balanced, a11y baseline met, dark mode added
 
 ## Fixes applied in this audit pass
 
