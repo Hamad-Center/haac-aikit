@@ -27,8 +27,23 @@ aikit add --html
 | **`/decide`** | Picking between 2-4 technical options | `docs/decisions/<date>-<slug>.html` |
 | **`/directions`** | Exploring visual design variants | `docs/directions/<date>-<slug>.html` |
 | **`/roadmap`** | Handing an implementation plan to an implementer | `docs/roadmaps/<date>-<slug>.html` |
+| **`/design`** *(opt-in: `aikit add design`)* | Codifying the project's design language as a contract | `DESIGN.md` + `docs/design/index.html` |
 
 Each command writes one self-contained HTML file — no build step, no CDN, commit and share the link. Built on [Thariq Shihipar's "Unreasonable Effectiveness of HTML for Claude Code"](https://thariqs.github.io/html-effectiveness/).
+
+### Does `/design` actually help?
+
+We ran the same four prompts twice — once with the skill installed, once freestyle. Same model, same inputs.
+
+| The ask | With `/design` | Without |
+|---|---|---|
+| "Read my homepage HTML, build a DESIGN.md" | **86%** | 71% |
+| "Just synthesize one — here's the vibe" | **86%** | 43% |
+| "Tweak the primary color, leave the rest alone" | 100% | 100% |
+| "Build it from this screenshot" | **100%** | 57% |
+| **Average across all four** | **93%** | 68% |
+
+**+25 points on average.** The freestyle AI usually misses three things: marker-bounded sections (so `/design refine` can't surgically update later), hex codes inside backticks (the showroom's color pickers can't bind to them), and parts of the brief — "no gray" turned into five shades of gray. `/design` bakes all three in.
 
 ## What else you get
 

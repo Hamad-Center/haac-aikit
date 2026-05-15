@@ -1,0 +1,13 @@
+# Keep the npm tarball lean — exclude eval workspaces and caches that live
+# under catalog/ but are receipts, not user-facing.
+
+catalog/skills/tier2/design-workspace
+catalog/skills/tier2/design-workspace/
+
+# Playwright cache (from screenshot generation runs).
+.playwright-mcp
+.playwright-mcp/
+
+# Build/test detritus.
+*.log
+*.tmp

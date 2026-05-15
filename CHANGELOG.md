@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-05-15
+
+Adds **`/design`**, a tier2 / opt-in skill that codifies a project's visual language as a `DESIGN.md` contract every AI tool can read, plus an interactive HTML showroom for human review and in-browser tweaks. Validated against a 4-scenario benchmark — **+25 percentage points** vs. baseline (93% vs. 68% pass-rate). Also fixes a packaging gap so any tier2 skill that ships with a slash command or template directory installs correctly via `aikit add <name>`.
+
+### Added
+- **`/design` skill** (`catalog/skills/tier2/design.md`) — tier2 / opt-in. Bootstraps a project-root `DESIGN.md` with five marker-bounded sections (`atmosphere`, `colors`, `typography`, `components`, `layout`) from a screenshot, HTML paste, URL, or pure design brief. Subcommand `/design refine "<change>"` updates one section via the marker engine (`readSection` / `writeSection`) without touching the rest. Voice rules enforce descriptive hex-grounded language and forbid Tailwind jargon in the reading path.
+- **`/design` slash command** (`catalog/commands/design.md`) — wraps bootstrap + refine flows.
+- **HTML showroom template** (`catalog/templates/design/template.html`) — self-contained ~430-line page rendered from `DESIGN.md`. Level 2 interactivity: every color hex sits next to a native `<input type="color">` bound to CSS custom properties on `.preview-stage`, font dropdowns swap typography specimens live, a "Copy Markdown" button serializes the current state back to clipboard for round-trip via `/design refine`. Light/dark toggle, no CDN, no build step, no server.
+- **Marker-bounded starter** (`catalog/templates/design/starter-DESIGN.md`) — copied as the initial `DESIGN.md` when `/design` scaffolds. Section IDs are stable across edits.
+- **Round-trip test** (`test/catalog-design.test.ts`) — asserts `writeSection(c, id, readSection(c, id)!, file) === c` for every section in the starter, plus presence of `data-aikit-section` DOM hooks the showroom JS depends on.
+- **`.npmignore`** — keeps eval workspaces (`catalog/skills/*/*-workspace/`) and Playwright cache out of the published tarball.
+
+### Changed
+- **`aikit add <name>`** — single-item add now copies companion artifacts when the skill ships them: matching `catalog/commands/<name>.md` → `.claude/commands/`, and every file under `catalog/templates/<name>/` → `.aikit/templates/<name>/`. Previously, only the bundled `aikit add --html` path knew how to install templates and commands; now any tier2 skill bundling them works out of the box. Implementation: new `installSkillCompanions()` helper in `src/commands/add.ts`.
+- **README, AGENTS.md, `docs/index.html`** — added `/design` to the skill table / catalog enumeration / landing card grid, plus a benchmark-comparison section on the landing page and README showing the +25 percentage point delta.
+- **`scripts/catalog-check.js`** — validates `catalog/skills/tier2/design.md`, `catalog/commands/design.md`, and both files under `catalog/templates/design/`.
+
+### Benchmark
+
+Validated head-to-head against freestyle baseline on 4 scenarios (each in parallel subagent runs):
+
+| Scenario | With `/design` | Without | Δ |
+|---|---|---|---|
+| Build from pasted HTML | 86% | 71% | +15 |
+| Synthesize from a brief | 86% | 43% | +43 |
+| Refine one section, preserve the rest | 100% | 100% | 0 |
+| Build from a screenshot | 100% | 57% | +43 |
+| **Average** | **93%** | **68%** | **+25** |
+
+The skill's structural wins: marker-bounded sections (so `/design refine` works later), hex codes in `code` ticks (so the showroom's color pickers can bind), and active adherence to negative constraints in the brief.
+
 ## [0.12.0] - 2026-05-14
 
 A two-axis release: **catalog trim** (sharper kit, less always-on token cost) and **cross-tool parity** (skills, agents, hooks, MCP now fan out to every selected tool in its native format — not just Claude Code). Plus two new HTML skills.

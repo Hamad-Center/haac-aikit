@@ -171,6 +171,48 @@
     .install-html code { background: transparent; padding: 0; color: var(--slate); }
     .install-html .meta { color: var(--gray-500); font-size: 12px; margin-left: auto; }
 
+    /* ---- comparison table ---- */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14.5px;
+      background: var(--white);
+      border: 1px solid var(--gray-300);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .compare-table th, .compare-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-150);
+    }
+    .compare-table th {
+      background: var(--gray-150);
+      color: var(--gray-500);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+    }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr.total td { font-weight: 600; background: var(--gray-150); }
+    .compare-table td:not(:first-child) {
+      font-family: var(--mono);
+      text-align: right;
+      width: 120px;
+      color: var(--slate);
+    }
+    .compare-table .win  { color: var(--olive); }
+    .compare-table .lose { color: var(--clay);  }
+    .compare-takeaway {
+      font-size: 14.5px;
+      color: var(--gray-700);
+      margin-top: 16px;
+      line-height: 1.6;
+    }
+    .compare-takeaway strong { color: var(--slate); }
+
     /* ---- fan-out diagram ---- */
     .diagram {
       background: var(--white);
@@ -289,13 +331,59 @@
           <p class="what">Implementation plan: milestones, data-flow SVG, mockups, code, risks, open questions.</p>
           <span class="path">docs/roadmaps/&lt;date&gt;-&lt;slug&gt;.html</span>
         </article>
+        <article class="skill">
+          <h3>/design <span class="meta">(opt-in)</span></h3>
+          <p class="what">Codify the project's design language as a Markdown contract every AI tool reads, plus an interactive HTML showroom with live tweaking.</p>
+          <span class="path">DESIGN.md + docs/design/index.html</span>
+        </article>
       </div>
 
       <div class="install-html" role="region" aria-label="Install the HTML bundle">
         <span class="prompt" aria-hidden="true">$</span>
         <code>aikit add --html</code>
-        <span class="meta">installs all 4 skills + commands + templates</span>
+        <span class="meta">installs the 4 always-on skills · add <code>design</code> separately with <code>aikit add design</code></span>
       </div>
+    </section>
+
+    <!-- ============ does /design actually help? ============ -->
+    <section aria-labelledby="proof-h">
+      <h2 id="proof-h">Does <code>/design</code> actually help?</h2>
+      <p class="section-intro">We ran the same four prompts twice — once with the skill installed, once freestyle. Same model, same inputs. The skill's job is to make the freestyle answer disappear.</p>
+
+      <table class="compare-table" aria-label="Pass-rate comparison across four scenarios">
+        <thead>
+          <tr><th>The ask</th><th>With <code>/design</code></th><th>Without</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>"Read my homepage HTML, build a DESIGN.md"</td>
+            <td class="win">86%</td>
+            <td>71%</td>
+          </tr>
+          <tr>
+            <td>"Just synthesize one — here's the vibe"</td>
+            <td class="win">86%</td>
+            <td class="lose">43%</td>
+          </tr>
+          <tr>
+            <td>"Tweak the primary color, leave the rest alone"</td>
+            <td>100%</td>
+            <td>100%</td>
+          </tr>
+          <tr>
+            <td>"Build it from this screenshot"</td>
+            <td class="win">100%</td>
+            <td class="lose">57%</td>
+          </tr>
+          <tr class="total">
+            <td>Average across all four</td>
+            <td class="win">93%</td>
+            <td>68%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="compare-takeaway"><strong>+25 points on average.</strong> The freestyle AI usually misses three things: it forgets the marker-bounded sections (so <code>/design refine</code> can't surgically update a single block later), it puts hex codes outside backticks (the showroom's color pickers can't bind to them), and it ignores parts of the brief — "no gray" turned into "five shades of gray." <code>/design</code> bakes all three in.</p>
     </section>
 
     <!-- ============ cross-tool diagram ============ -->

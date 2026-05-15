@@ -33,8 +33,8 @@ Run a single test: `npx vitest run test/path.test.ts -t "name"`.
 - `catalog/hooks/`       — bash hooks: safety (block-*) + telemetry (log-rule-event, check-pattern-violations, judge-rule-compliance)
 - `catalog/skills/`      — tier1 (always-on) and tier2 (opt-in) skills
 - `catalog/agents/`      — tier1 (`orchestrator`, `pr-describer`) and tier2 (shape-specialty agents)
-- `catalog/commands/`    — slash commands (one per HTML skill + commit / commit-push-pr / security-review / ship)
-- `catalog/templates/`   — HTML templates: `docs/`, `decide/`, `directions/`, `roadmap/`
+- `catalog/commands/`    — slash commands (one per HTML skill + commit / commit-push-pr / security-review / ship + opt-in `/design`)
+- `catalog/templates/`   — HTML templates: `docs/`, `decide/`, `directions/`, `roadmap/`, `design/` (opt-in: DESIGN.md showroom)
 - `catalog/{ci,mcp,settings}/` — CI workflows, MCP stub, settings
 - `test/`                — vitest specs (co-located by feature)
 - `docs/`                — project-internal docs and the GitHub Pages landing
