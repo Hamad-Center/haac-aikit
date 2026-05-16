@@ -100,6 +100,20 @@ function checkSkills() {
       const entryPath = join(dir, entry);
       return statSync(entryPath).isDirectory();
     });
+
+    // Reject any non-directory, non-.md entry (typos like foo.mdx, stray files,
+    // accidentally-committed SKILL.md at tier root). .DS_Store is the one
+    // tolerated exception so we don't break macOS contributors.
+    const accountedFor = new Set([...looseMd, ...namesByTier[tier]]);
+    const orphans = readdirSync(dir).filter(
+      (entry) => !accountedFor.has(entry) && entry !== ".DS_Store"
+    );
+    if (orphans.length > 0) {
+      fail(
+        `catalog/skills/${tier}/ has unrecognized entries: ${orphans.join(", ")}. ` +
+        `Each skill must be a folder containing SKILL.md.`
+      );
+    }
   }
 
   // Reject same-name collisions across tiers.
@@ -142,11 +156,26 @@ function checkSkills() {
         fail(`${skillFile} frontmatter missing 'description:'`);
       }
 
-      // `allowed-tools:` required — least-privilege declaration.
-      if (!/^allowed-tools:/m.test(fm)) {
+      // `allowed-tools:` required — least-privilege declaration. Must have a
+      // non-empty value: `allowed-tools:` (bare) or `allowed-tools: []` defeats
+      // the purpose. Accept either a string list (`Read, Edit`) or a YAML block
+      // sequence starting on the next line (`- Read`).
+      const allowedToolsMatch = fm.match(/^allowed-tools:[ \t]*(.*)$/m);
+      if (!allowedToolsMatch) {
         fail(
           `${skillFile} frontmatter missing 'allowed-tools:' — every skill must ` +
           `declare which tools it needs (least-privilege).`
+        );
+      }
+      const sameLineValue = allowedToolsMatch[1].trim();
+      // Match the next non-blank line after `allowed-tools:` for block-sequence form.
+      const blockMatch = fm.match(/^allowed-tools:[ \t]*\n([\s\S]+)$/m);
+      const blockHasItem = blockMatch && /^\s*-\s+\S/m.test(blockMatch[1]);
+      const isEmptyInline = sameLineValue === "" || sameLineValue === "[]";
+      if (isEmptyInline && !blockHasItem) {
+        fail(
+          `${skillFile} frontmatter 'allowed-tools:' has no tools listed. ` +
+          `Declare at least one tool — empty allow-lists defeat least-privilege.`
         );
       }
     }

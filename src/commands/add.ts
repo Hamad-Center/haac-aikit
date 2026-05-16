@@ -1,15 +1,21 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import * as p from "@clack/prompts";
 import kleur from "kleur";
-import { CATALOG_ROOT } from "../catalog/index.js";
+import {
+  CATALOG_ROOT,
+  listSkillFolders,
+  skillFile,
+  skillFolder,
+} from "../catalog/index.js";
 import { readConfig, writeConfig } from "../fs/readConfig.js";
 import type { AikitConfig, AgentTier, CliArgs, SkillTier } from "../types.js";
 
 type ItemType = "skill" | "agent" | "hook";
 
-const ITEM_DIRS: Record<ItemType, { catalog: string; dest: string; ext: string[] }> = {
-  skill: { catalog: "skills/tier1", dest: ".claude/skills", ext: [".md"] },
+// Only used for agents and hooks now; skills follow the folder format and are
+// handled by findCatalogItem/runAddHtmlBundle directly via the catalog helpers.
+const ITEM_DIRS: Record<Exclude<ItemType, "skill">, { catalog: string; dest: string; ext: string[] }> = {
   agent: { catalog: "agents/tier1", dest: ".claude/agents", ext: [".md"] },
   hook: { catalog: "hooks", dest: ".claude/hooks", ext: [".sh"] },
 };
@@ -17,9 +23,12 @@ const ITEM_DIRS: Record<ItemType, { catalog: string; dest: string; ext: string[]
 interface FoundItem {
   type: ItemType;
   name: string;
-  srcFile: string;
-  destFile: string;
-  destDir: string;
+  /** Human-readable destination (file path or folder path) — used in messages. */
+  destLabel: string;
+  /** Whether the install destination already exists. */
+  exists: () => boolean;
+  /** Perform the install (copy file or recursively copy folder). */
+  install: () => void;
 }
 
 // The HTML-artifact bundle: skills, matching slash commands, and template
@@ -65,18 +74,20 @@ export async function runAdd(argv: CliArgs): Promise<void> {
     process.exit(1);
   }
 
-  if (existsSync(found.destFile) && !argv.force) {
-    p.log.warn(`${found.destFile} already exists. Use --force to overwrite.`);
+  // For folder-format skills, "already exists" means the destination folder
+  // exists; for flat agents/hooks it's the file. installCatalogItem handles
+  // the layout difference.
+  if (found.exists() && !argv.force) {
+    p.log.warn(`${found.destLabel} already exists. Use --force to overwrite.`);
     return;
   }
 
   if (!argv["dry-run"]) {
-    mkdirSync(found.destDir, { recursive: true });
-    copyFileSync(found.srcFile, found.destFile);
+    found.install();
   }
 
   const dryPrefix = argv["dry-run"] ? "[dry-run] " : "";
-  process.stdout.write(`${dryPrefix}${kleur.green("✓")} Added ${found.destFile}\n`);
+  process.stdout.write(`${dryPrefix}${kleur.green("✓")} Added ${found.destLabel}\n`);
 
   // Persist the addition so the next `aikit sync` reproduces it.
   if (!argv["dry-run"]) {
@@ -92,24 +103,24 @@ async function runAddHtmlBundle(argv: CliArgs): Promise<void> {
   let installed = 0;
   let skipped = 0;
 
-  // Skills: all four live in tier1.
+  // Skills: all four live in tier1 as folders containing SKILL.md.
   for (const name of HTML_BUNDLE_ITEMS) {
-    const src = join(CATALOG_ROOT, "skills", "tier1", `${name}.md`);
-    const dest = join(".claude/skills", `${name}.md`);
-    if (!existsSync(src)) {
-      p.log.error(`bundled skill missing in catalog: ${src}`);
+    const srcDir = skillFolder("tier1", name);
+    const destDir = join(".claude/skills", name);
+    if (!existsSync(skillFile("tier1", name))) {
+      p.log.error(`bundled skill missing in catalog: ${srcDir}/SKILL.md`);
       process.exit(1);
     }
-    if (existsSync(dest) && !argv.force) {
+    if (existsSync(destDir) && !argv.force) {
       process.stdout.write(`  ${kleur.dim("·")} skill ${name} (already installed)\n`);
       skipped++;
       continue;
     }
     if (!argv["dry-run"]) {
       mkdirSync(".claude/skills", { recursive: true });
-      copyFileSync(src, dest);
+      cpSync(srcDir, destDir, { recursive: true, force: true });
     }
-    process.stdout.write(`${dryPrefix}${kleur.green("✓")} skill .claude/skills/${name}.md\n`);
+    process.stdout.write(`${dryPrefix}${kleur.green("✓")} skill .claude/skills/${name}/SKILL.md\n`);
     installed++;
   }
 
@@ -163,55 +174,65 @@ async function runAddHtmlBundle(argv: CliArgs): Promise<void> {
 }
 
 function findCatalogItem(name: string): FoundItem | null {
-  // Skills are spread across tier1 and tier2.
-  for (const tier of ["tier1", "tier2"]) {
-    const dir = join(CATALOG_ROOT, "skills", tier);
-    if (existsSync(dir)) {
-      const candidate = join(dir, `${name}.md`);
-      if (existsSync(candidate)) {
-        return {
-          type: "skill",
-          name,
-          srcFile: candidate,
-          destFile: join(".claude/skills", `${name}.md`),
-          destDir: ".claude/skills",
-        };
-      }
+  // Skills are folders containing SKILL.md, in tier1 or tier2.
+  for (const tier of ["tier1", "tier2"] as const) {
+    if (existsSync(skillFile(tier, name))) {
+      const srcDir = skillFolder(tier, name);
+      const destDir = join(".claude/skills", name);
+      return {
+        type: "skill",
+        name,
+        destLabel: join(destDir, "SKILL.md"),
+        exists: () => existsSync(destDir),
+        install: () => {
+          mkdirSync(".claude/skills", { recursive: true });
+          cpSync(srcDir, destDir, { recursive: true, force: true });
+        },
+      };
     }
   }
 
-  // Agents live in tier subdirectories (tier1, tier2); hooks live flat.
+  // Agents live in tier subdirectories as flat .md files.
   for (const tier of ["tier1", "tier2"]) {
     const dir = join(CATALOG_ROOT, "agents", tier);
     if (existsSync(dir)) {
       const candidate = join(dir, `${name}.md`);
       if (existsSync(candidate)) {
+        const destFile = join(".claude/agents", `${name}.md`);
         return {
           type: "agent",
           name,
-          srcFile: candidate,
-          destFile: join(".claude/agents", `${name}.md`),
-          destDir: ".claude/agents",
+          destLabel: destFile,
+          exists: () => existsSync(destFile),
+          install: () => {
+            mkdirSync(".claude/agents", { recursive: true });
+            copyFileSync(candidate, destFile);
+          },
         };
       }
     }
   }
 
   // Hooks live in a flat catalog directory.
-  for (const type of ["hook"] as const) {
-    const spec = ITEM_DIRS[type];
+  {
+    const spec = ITEM_DIRS.hook;
     const catalogDir = join(CATALOG_ROOT, spec.catalog);
-    if (!existsSync(catalogDir)) continue;
-    for (const ext of spec.ext) {
-      const candidate = join(catalogDir, `${name}${ext}`);
-      if (existsSync(candidate)) {
-        return {
-          type,
-          name,
-          srcFile: candidate,
-          destFile: join(spec.dest, `${name}${ext}`),
-          destDir: spec.dest,
-        };
+    if (existsSync(catalogDir)) {
+      for (const ext of spec.ext) {
+        const candidate = join(catalogDir, `${name}${ext}`);
+        if (existsSync(candidate)) {
+          const destFile = join(spec.dest, `${name}${ext}`);
+          return {
+            type: "hook",
+            name,
+            destLabel: destFile,
+            exists: () => existsSync(destFile),
+            install: () => {
+              mkdirSync(spec.dest, { recursive: true });
+              copyFileSync(candidate, destFile);
+            },
+          };
+        }
       }
     }
   }
@@ -277,7 +298,7 @@ function updateConfigForAddition(configPath: string | undefined, item: FoundItem
 
 function detectSkillTier(name: string): SkillTier {
   for (const tier of ["tier1", "tier2"] as const) {
-    if (existsSync(join(CATALOG_ROOT, "skills", tier, `${name}.md`))) {
+    if (existsSync(skillFile(tier, name))) {
       return tier;
     }
   }
@@ -295,7 +316,10 @@ function detectAgentTier(name: string): AgentTier {
 
 function listAllCatalogItems(): string[] {
   const items: string[] = [];
-  for (const subdir of ["skills/tier1", "skills/tier2", "agents/tier1", "agents/tier2", "hooks"]) {
+  // Skills: folder names with SKILL.md.
+  items.push(...listSkillFolders("tier1"), ...listSkillFolders("tier2"));
+  // Agents + hooks: flat files.
+  for (const subdir of ["agents/tier1", "agents/tier2", "hooks"]) {
     const dir = join(CATALOG_ROOT, subdir);
     if (existsSync(dir)) {
       readdirSync(dir)

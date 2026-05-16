@@ -2,9 +2,9 @@ import * as p from "@clack/prompts";
 import { readConfig, writeConfig } from "../fs/readConfig.js";
 import { safeWrite } from "../fs/safeWrite.js";
 import { ensureGitignoreEntries } from "../fs/gitignore.js";
-import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
-import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync, chmodSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { CATALOG_ROOT, loadCatalog, listSkillFolders, skillFolder } from "../catalog/index.js";
+import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync, chmodSync, statSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { parseRuleSet, translateForCursor } from "../render/dialects/index.js";
 import { interpolate } from "../render/template.js";
 import { extractMarkerRegion } from "../render/markers.js";
@@ -20,7 +20,7 @@ import {
   buildCodexConfigToml,
   buildSkillsIndex,
 } from "../render/translators.js";
-import { interactivePrompt, inferTier3Slot, type ConflictPrompt } from "../fs/conflict.js";
+import { interactivePrompt, tier3KeyFromConflictPath, type ConflictPrompt } from "../fs/conflict.js";
 import type { CliArgs, WriteResult, WriteOpts, AikitConfig, ConflictResolution } from "../types.js";
 
 export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt }): Promise<void> {
@@ -243,9 +243,9 @@ export async function runSync(argv: CliArgs & { _conflictPrompt?: ConflictPrompt
           if (!opts.dryRun) copyFileSync(incomingSrc, conflict.path);
           conflict.action = "updated";
         } else if (resolution === "keep") {
-          const slot = inferTier3Slot(conflict.path);
-          if (slot) {
-            const name = basename(conflict.path).replace(/\.md$/, "");
+          const tier3 = tier3KeyFromConflictPath(conflict.path);
+          if (tier3) {
+            const { slot, name } = tier3;
             const current = workingConfig[slot] ?? { tier1: "all", tier2: "all", tier3: [] };
             if (!current.tier3.includes(name)) {
               workingConfig = {
@@ -347,10 +347,8 @@ export function copyAction(
 function loadSkillsFromCatalog(): ReturnType<typeof parseFrontmatter>[] {
   const out: ReturnType<typeof parseFrontmatter>[] = [];
   for (const tier of ["tier1", "tier2"] as const) {
-    const dir = join(CATALOG_ROOT, "skills", tier);
-    if (!existsSync(dir)) continue;
-    for (const file of readdirSync(dir).filter((f) => f.endsWith(".md"))) {
-      const content = readFileSync(join(dir, file), "utf8");
+    for (const name of listSkillFolders(tier)) {
+      const content = readFileSync(join(skillFolder(tier, name), "SKILL.md"), "utf8");
       out.push(parseFrontmatter(content));
     }
   }
@@ -390,20 +388,38 @@ function listHookFiles(): string[] {
 }
 
 function syncSkills(tier: "tier1" | "tier2", opts: WriteOpts): WriteResult[] {
-  const srcDir = join(CATALOG_ROOT, "skills", tier);
-  const destDir = `.claude/skills`;
+  const destRoot = `.claude/skills`;
   const results: WriteResult[] = [];
 
-  if (!existsSync(srcDir)) return results;
-
-  const files = readdirSync(srcDir).filter((f) => f.endsWith(".md"));
-  if (!opts.dryRun) mkdirSync(destDir, { recursive: true });
-
-  for (const file of files) {
-    results.push(copyAction(join(srcDir, file), join(destDir, file), opts));
+  // Each skill is a folder containing SKILL.md and optional sibling files
+  // (e.g. spec-kit/references/). We copy every file under the folder through
+  // copyAction so any of them participate in conflict detection — overwriting
+  // a user-customized references/ file silently would be a regression vs the
+  // prior flat layout (where references didn't exist).
+  for (const name of listSkillFolders(tier)) {
+    const srcRoot = skillFolder(tier, name);
+    for (const src of walkFiles(srcRoot)) {
+      const rel = relative(srcRoot, src);
+      const dest = join(destRoot, name, rel);
+      results.push(copyAction(src, dest, opts));
+    }
   }
 
   return results;
+}
+
+function walkFiles(root: string): string[] {
+  const out: string[] = [];
+  if (!existsSync(root)) return out;
+  for (const entry of readdirSync(root)) {
+    const full = join(root, entry);
+    if (statSync(full).isDirectory()) {
+      out.push(...walkFiles(full));
+    } else {
+      out.push(full);
+    }
+  }
+  return out;
 }
 
 function syncTemplates(opts: WriteOpts): WriteResult[] {

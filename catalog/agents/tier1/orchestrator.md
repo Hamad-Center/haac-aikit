@@ -27,10 +27,14 @@ A task too large or complex for a single agent has been handed to you.
    - Mark sequential vs. parallel dependencies
 
 3. **Assign to specialists** (one task at a time, sequentially unless genuinely parallel):
-   - `backend` — server-side work: APIs, DB schemas, auth, queues, integrations
-   - `frontend` — UI components, CSS, accessibility, browser performance
-   - `mobile` — React Native / Flutter, platform-specific work
-   - `pr-describer` — diff → PR title + Summary + Test plan
+   - `backend` — server-side work: APIs, DB schemas, auth, queues, integrations *(tier2, opt-in)*
+   - `frontend` — UI components, CSS, accessibility, browser performance *(tier2, opt-in)*
+   - `mobile` — React Native / Flutter, platform-specific work *(tier2, opt-in)*
+   - `pr-describer` — diff → PR title + Summary + Test plan *(always installed)*
+
+   **Specialist availability is not guaranteed.** `backend`, `frontend`, and `mobile` are tier2 and may not be installed in this project. Before dispatching, check that the agent exists by inspecting `.claude/agents/` (Read or LS). If the specialist isn't installed, either:
+   (a) dispatch the **general-purpose** agent with the same brief, or
+   (b) return `Status: NEEDS_CONTEXT` asking the user to run `aikit add <agent>` for the missing specialist.
 
    For research, planning, review, testing, security sweeps, and CI work, the parent should invoke the matching **skill** directly rather than dispatching a subagent — see `codebase-exploration`, `writing-plans`, `requesting-code-review`, `test-driven-development`, `security-review`, `dependency-hygiene`.
 

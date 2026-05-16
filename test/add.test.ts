@@ -71,6 +71,8 @@ describe("aikit add — config persistence", () => {
     const after = readWrittenConfig();
     expect(after.skills.tier3).toEqual([]);
     expect(after.skills.tier1).toBe("all");
+    // Folder-format: installed under .claude/skills/<name>/SKILL.md
+    expect(existsSync(".claude/skills/brainstorming/SKILL.md")).toBe(true);
   });
 
   it("turns on integrations.hooks when a hook is added on a fresh config", async () => {
@@ -127,7 +129,7 @@ describe("aikit add --html — HTML-artifact bundle", () => {
     await runAdd({ _: ["add"], html: true } as never);
 
     for (const name of expectedSkills) {
-      expect(existsSync(`.claude/skills/${name}.md`), `skill ${name}`).toBe(true);
+      expect(existsSync(`.claude/skills/${name}/SKILL.md`), `skill ${name}`).toBe(true);
       expect(existsSync(`.claude/commands/${name}.md`), `command /${name}`).toBe(true);
     }
     for (const path of expectedTemplates) {
@@ -142,7 +144,7 @@ describe("aikit add --html — HTML-artifact bundle", () => {
 
     // Files still exist and weren't deleted.
     for (const name of expectedSkills) {
-      expect(existsSync(`.claude/skills/${name}.md`)).toBe(true);
+      expect(existsSync(`.claude/skills/${name}/SKILL.md`)).toBe(true);
     }
   });
 
@@ -151,7 +153,7 @@ describe("aikit add --html — HTML-artifact bundle", () => {
     await runAdd({ _: ["add"], html: true, "dry-run": true } as never);
 
     for (const name of expectedSkills) {
-      expect(existsSync(`.claude/skills/${name}.md`), `skill ${name} (dry-run)`).toBe(false);
+      expect(existsSync(`.claude/skills/${name}/SKILL.md`), `skill ${name} (dry-run)`).toBe(false);
     }
     for (const path of expectedTemplates) {
       expect(existsSync(`.aikit/templates/${path}`), `template ${path} (dry-run)`).toBe(false);

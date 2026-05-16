@@ -1,7 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { interpolate } from "../render/template.js";
+
+export type SkillTierName = "tier1" | "tier2";
 
 // Walk up from this file looking for a sibling `catalog/` directory. Resolves
 // correctly in both states:
@@ -25,6 +27,44 @@ export const CATALOG_ROOT = findCatalogRoot();
 
 function read(rel: string): string {
   return readFileSync(join(CATALOG_ROOT, rel), "utf8");
+}
+
+// Skills live as `catalog/skills/<tier>/<name>/SKILL.md` (folder format). The
+// install destination mirrors that layout at `.claude/skills/<name>/SKILL.md`,
+// which is required so sibling files (e.g. spec-kit/references/) ride along.
+export function skillFolder(tier: SkillTierName, name: string): string {
+  return join(CATALOG_ROOT, "skills", tier, name);
+}
+
+export function skillFile(tier: SkillTierName, name: string): string {
+  return join(skillFolder(tier, name), "SKILL.md");
+}
+
+/** Catalog skill folder names for a tier (only entries that contain SKILL.md). */
+export function listSkillFolders(tier: SkillTierName): string[] {
+  const dir = join(CATALOG_ROOT, "skills", tier);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((entry) => {
+    const full = join(dir, entry);
+    try {
+      return statSync(full).isDirectory() && existsSync(join(full, "SKILL.md"));
+    } catch {
+      return false;
+    }
+  });
+}
+
+/** Installed skill folder names under `.claude/skills/` (or any install root). */
+export function listInstalledSkillFolders(installRoot: string): string[] {
+  if (!existsSync(installRoot)) return [];
+  return readdirSync(installRoot).filter((entry) => {
+    const full = join(installRoot, entry);
+    try {
+      return statSync(full).isDirectory() && existsSync(join(full, "SKILL.md"));
+    } catch {
+      return false;
+    }
+  });
 }
 
 export function loadCatalog() {
