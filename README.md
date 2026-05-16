@@ -69,6 +69,8 @@ Full reference: `aikit --help`. Detailed audit per tool: [`AUDIT.md`](AUDIT.md).
 
 Pre-1.0. Expect breaking changes between minor versions. **0.12.0** ships with cross-tool parity for 6 of 7 tools (Aider has no native rule loader; we ship a skills index in `CONVENTIONS.md` instead). All blockers from the [pre-publish audit](audits/) have been fixed.
 
+> **Heads up (unreleased):** skills migrated to folder format — `.claude/skills/<name>/SKILL.md` instead of `.claude/skills/<name>.md`. Re-run `aikit sync` after upgrading; see [CHANGELOG](CHANGELOG.md#unreleased) for migration notes.
+
 - Site: <https://hamad-center.github.io/haac-aikit/>
 - Try / discuss: [issue #1](https://github.com/Hamad-Center/haac-aikit/issues/1)
 
