@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.14.0] - 2026-05-16
 
 ### Changed (breaking — pre-1.0)
 - **Skills migrated to folder format.** Each skill now lives at `catalog/skills/<tier>/<name>/SKILL.md` (was `catalog/skills/<tier>/<name>.md`). Install destination mirrors the layout: `.claude/skills/<name>/SKILL.md`. Sibling files inside a skill folder (e.g. `spec-kit/references/`) now install alongside `SKILL.md` and participate in `aikit sync` conflict detection per file. The flat `.md` layout is no longer accepted by `catalog-check`.
