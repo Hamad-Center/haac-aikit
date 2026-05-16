@@ -1,33 +1,14 @@
-Run an OWASP-aligned security sweep using the security-review skill.
+Run an OWASP-aligned security sweep using the `security-review` skill.
 
-Check the recent changes (or the specified scope) for:
+## Usage
+`/security-review $ARGUMENTS`
 
-**Injection (A03)**
-- SQL queries use parameterised statements — no string concatenation
-- Shell commands use execFile with arg arrays — no user data in shell strings
-- Template rendering sanitises HTML output
+`$ARGUMENTS` is the scope (file path / glob) if provided, otherwise the diff vs the merge base.
 
-**Auth & session (A07)**
-- Tokens not in logs or error responses
-- Session IDs regenerated on privilege escalation
+## Steps
+1. Invoke the `security-review` skill — it owns the OWASP A01/A02/A03/A06/A07 checklist, severity mapping, and ✓/⚠/✗ report format.
+2. For supply-chain findings (A06), defer to the `dependency-hygiene` skill rather than duplicating the rule here.
+3. Report the ✓/⚠/✗ summary. Any ✗ (critical) is a blocker for `/ship` and `/commit-push-pr`.
 
-**Sensitive data (A02)**
-- No hardcoded secrets, API keys, or credentials
-- Env vars validated at startup
-- No sensitive fields in console.log output
-
-**Access control (A01)**
-- Every route checks authorisation, not just authentication
-- Resource ownership verified
-
-**Supply chain (A06)**
-- No new dependencies without hygiene check
-- `npm audit` passes
-
-Output:
-```
-Security sweep: [scope]
-✓ No issues in [category]
-⚠ [category]: [finding] at [file:line] — [fix]
-✗ [critical] — MUST fix before merge
-```
+## Note
+This command is the dispatch shim. The full checklist lives in the skill so the two cannot drift.
