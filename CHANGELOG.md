@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2026-05-16
+
+A packaging fix for v0.13.0. The `/design` skill was documented in the v0.13.0 CHANGELOG, README, `AGENTS.md`, and landing page — but the actual skill files were never committed. The original `feat: add /design skill` commit shipped only the documentation; the catalog files lived as untracked working-tree state and were lost during a later tree-clean. v0.14.0 then migrated all skills to folder format, which moved the broken reference path without fixing it.
+
+This release restores the missing files in v0.14 folder format and adds a companion-installer path so any tier2 skill that ships a slash command + template pack works out of the box via `aikit add <name>`.
+
+### Added
+
+- **`/design` skill** restored at `catalog/skills/tier2/design/SKILL.md`. Five marker-bounded sections (`atmosphere`, `colors`, `typography`, `components`, `layout`). Voice rules: hex codes in inline `code` ticks; no Tailwind class names or design-token aliases as the source of truth in the reading path; full font stacks; numerical layout specs. Bootstrap from screenshot / HTML / URL / brief; refine via `readSection` / `writeSection` for surgical single-section updates.
+- **`/design` slash command** at `catalog/commands/design.md`.
+- **Showroom template** at `catalog/templates/design/template.html` — self-contained interactive showroom (~19 KB). Color pickers bound to CSS custom properties, font dropdowns swap typography specimens live, Copy Markdown button serializes state back to clipboard for round-trip via `/design refine`, light/dark toggle, no CDN, no build step.
+- **Marker-bounded starter** at `catalog/templates/design/starter-DESIGN.md` — copied as the initial `DESIGN.md` when `/design` scaffolds.
+- **`installSkillCompanions()`** in `src/commands/add.ts` — when `aikit add <name>` adds a skill, it now also copies the matching `catalog/commands/<name>.md` to `.claude/commands/` and every file under `catalog/templates/<name>/` to `.aikit/templates/<name>/`. Makes tier2-with-companions a first-class pattern (previously only the bundled `aikit add --html` path handled companions). Strictly additive — no behavior change for skills without companions.
+
+### Hardened
+
+- **`scripts/catalog-check.js`** — new soft `checkDesignSkill()` validator. When `/design` is present, asserts the four catalog files exist, all five section markers are present in `starter-DESIGN.md`, and all five `data-aikit-section` DOM hooks are present in `template.html`. Skips silently for fixture-based test catalogs.
+
+### Benchmark
+
+Re-validated head-to-head against the freestyle baseline on 3 scenarios (parallel subagent runs scored against a 7-criterion binary rubric):
+
+| Scenario | With `/design` | Freestyle | Δ |
+|---|---|---|---|
+| Extract from pasted HTML | 100% | 71% | +29 |
+| Synthesize from a verbal brief | 100% | 71% | +29 |
+| Build from a described screenshot | 86% | 57% | +29 |
+| **Average** | **95%** | **66%** | **+29** |
+
+Freestyle always wins on the descriptive criteria (hex codes in code ticks, font stacks, numerical specs all appear naturally) and always loses on the structural contract — invents its own section IDs (`design-overview`, `design.tokens.color`) and marker patterns (`<!-- BEGIN:design-X -->`) instead of the engine's canonical `<!-- BEGIN:haac-aikit:section:X -->`. Eval harness lives at `evals/design/` (not shipped in the npm package).
+
+### Tests
+
+- New `test/catalog-design.test.ts` — round-trip per section (`writeSection(c, id, readSection(c, id)!, file) === c`), `data-aikit-section` DOM-hook presence for all 5 IDs in the showroom, no-CDN contract.
+- **174/174 tests pass.**
+
+### Migration
+
+No action required. `aikit sync` is forward-compatible with existing `.aikitrc.json`. Run `aikit add design` if you want to install the skill into a project that didn't have it.
+
 ## [0.14.0] - 2026-05-16
 
 ### Changed (breaking — pre-1.0)
