@@ -122,6 +122,99 @@
     a:hover { border-bottom-color: var(--clay); }
     code { font-family: var(--mono); font-size: 0.9em; background: var(--gray-150); padding: 1px 6px; border-radius: 3px; }
 
+    /* ---- Recently shipped cards ---- */
+    .shipped { display: block; }
+    .shipped-card {
+      background: var(--white);
+      border: 1px solid var(--gray-300);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 120ms;
+    }
+    .shipped-card:hover { border-color: var(--clay); }
+    .shipped-card .ver {
+      display: block;
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--clay);
+      margin-bottom: 2px;
+    }
+    .shipped-card .date {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--gray-500);
+      white-space: nowrap;
+      margin-bottom: 10px;
+    }
+    .shipped-card .lede {
+      font-size: 14.5px;
+      color: var(--gray-700);
+      margin: 0 0 10px;
+      flex: 1;
+    }
+    .shipped-card .badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--olive);
+      border: 1px solid var(--olive);
+      border-radius: 3px;
+      padding: 1px 6px;
+      margin-bottom: 10px;
+    }
+    .shipped-card .cl {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--gray-500);
+      text-decoration: none;
+      border-bottom: 1px dotted currentColor;
+      align-self: flex-start;
+    }
+    .shipped-card .cl:hover { color: var(--clay); border-color: var(--clay); }
+    .shipped-card h4 {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--olive);
+      margin: 14px 0 6px;
+    }
+    .shipped-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 4px;
+    }
+    .shipped-card ul li {
+      font-size: 14.5px;
+      color: var(--gray-700);
+      padding-left: 16px;
+      position: relative;
+      margin: 2px 0;
+      line-height: 1.5;
+    }
+    .shipped-card ul li::before {
+      content: "·";
+      position: absolute;
+      left: 4px;
+      color: var(--gray-500);
+      font-weight: 700;
+    }
+    .shipped-card .migration {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin: 14px 0 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--gray-300);
+    }
+
     /* ---- HTML skill cards ---- */
     .skills {
       display: grid;
@@ -165,11 +258,121 @@
       font-family: var(--mono); font-size: 14px;
       margin: 16px 0 0;
       color: var(--gray-700);
-      display: flex; align-items: center; gap: 10px;
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
     }
     .install-html .prompt { color: var(--clay); user-select: none; }
-    .install-html code { background: transparent; padding: 0; color: var(--slate); }
-    .install-html .meta { color: var(--gray-500); font-size: 12px; margin-left: auto; }
+    .install-html code { background: transparent; padding: 0; color: var(--slate); white-space: nowrap; }
+    .install-html .meta { color: var(--gray-500); font-size: 12px; flex-basis: 100%; }
+
+    /* ---- /design feature card ---- */
+    .design-feature { margin: 0 0 64px; }
+    .feature-card {
+      background: var(--white);
+      border: 2px solid var(--clay);
+      border-radius: 12px;
+      padding: 28px 30px;
+    }
+    .feature-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+    .feature-lead { flex: 1; min-width: 0; }
+    .feature-title {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--clay);
+      margin: 0 0 8px;
+      letter-spacing: -0.01em;
+    }
+    .feature-tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--olive);
+      border: 1px solid var(--olive);
+      border-radius: 3px;
+      padding: 2px 7px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .feature-lede {
+      font-size: 15.5px;
+      color: var(--gray-700);
+      margin: 0;
+      max-width: 540px;
+      line-height: 1.55;
+    }
+    .feature-stat {
+      flex: none;
+      text-align: right;
+      font-family: var(--mono);
+      line-height: 1;
+      padding-left: 16px;
+      border-left: 1px solid var(--gray-300);
+    }
+    .feature-stat strong {
+      display: block;
+      font-size: 44px;
+      font-weight: 700;
+      color: var(--clay);
+      letter-spacing: -0.02em;
+    }
+    .feature-stat .unit {
+      font-size: 14px;
+      color: var(--gray-700);
+      margin-top: 2px;
+      display: inline-block;
+    }
+    .feature-stat .caption {
+      display: block;
+      font-size: 11px;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 8px;
+    }
+    .feature-foot {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .feature-foot .install-html { margin: 0; flex: 1; min-width: 240px; }
+    .feature-jump {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--gray-500);
+      text-decoration: none;
+      border-bottom: 1px dotted currentColor;
+      white-space: nowrap;
+    }
+    .feature-jump:hover { color: var(--clay); border-color: var(--clay); }
+    .feature-note {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin: 14px 0 0;
+      padding: 10px 12px;
+      background: var(--gray-150);
+      border-radius: 6px;
+      border-left: 3px solid var(--olive);
+      max-width: 540px;
+    }
+    .feature-note .wip-dot {
+      color: var(--olive);
+      margin-right: 6px;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    @media (max-width: 600px) {
+      .feature-head { flex-direction: column; gap: 16px; }
+      .feature-stat { padding-left: 0; border-left: none; text-align: left; }
+    }
 
     /* ---- comparison table ---- */
     .compare-table {
@@ -285,7 +488,7 @@
     <p class="eyebrow"><a href="https://github.com/Hamad-Center/haac-aikit/releases/tag/v0.14.0" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;">v0.14.0</a> · MIT · pre-1.0</p>
     <h1>One config, seven AI tools see it.</h1>
     <p class="tagline">A cross-tool AI-coding kit. Write your project rules once in <code>AGENTS.md</code>; haac-aikit fans them out — plus skills, agents, hooks, and MCP servers — to every selected tool in its native format.</p>
-    <p class="tagline" style="font-size:14.5px;margin-top:-8px;"><strong>New in 0.14:</strong> skills migrated to folder format (<code>.claude/skills/&lt;name&gt;/SKILL.md</code>) so references/ subtrees ride along with each skill. Breaking — re-run <code>aikit sync</code> after upgrading. <a href="https://github.com/Hamad-Center/haac-aikit/blob/main/CHANGELOG.md#0140---2026-05-16">Changelog →</a></p>
+    <p class="tagline" style="font-size:14.5px;margin-top:-8px;"><strong>New in 0.14:</strong> skill folder format. See <a href="#shipped">Recently shipped ↓</a></p>
 
     <div class="tools-row" aria-label="Supported AI tools">
       <span>Claude Code</span>
@@ -297,95 +500,14 @@
       <span>OpenAI Codex CLI</span>
     </div>
 
-    <div class="install" role="region" aria-label="Install command">
+    <div class="install" role="region" aria-label="Install globally">
       <span class="prompt" aria-hidden="true">$</span>
-      <code id="install-cmd">npx haac-aikit</code>
+      <code id="install-cmd">npm i -g haac-aikit@latest</code>
       <button class="copy-btn" type="button" aria-label="Copy install command" onclick="
         navigator.clipboard.writeText(document.getElementById('install-cmd').textContent).then(()=>{this.textContent='copied';this.classList.add('copied');setTimeout(()=>{this.textContent='copy';this.classList.remove('copied')},1400)});
       ">copy</button>
     </div>
-    <p class="install-note">30-second wizard. Headless: <code>npx haac-aikit --yes --tools=claude</code></p>
-
-    <!-- ============ HTML skills ============ -->
-    <section aria-labelledby="html-h">
-      <h2 id="html-h">Four HTML skills</h2>
-      <p class="section-intro">Each one turns a single prompt into one self-contained HTML file you can open in a browser and commit to git. No build step, no CDN, no dependencies.</p>
-
-      <div class="skills">
-        <article class="skill">
-          <h3>/docs</h3>
-          <p class="what">Living project documentation. Edits one section at a time via marker-bounded blocks.</p>
-          <span class="path">docs/&lt;area&gt;.html</span>
-        </article>
-        <article class="skill">
-          <h3>/decide</h3>
-          <p class="what">Tradeoff page for 2-4 technical options. Cards, comparison, recommendation.</p>
-          <span class="path">docs/decisions/&lt;date&gt;-&lt;slug&gt;.html</span>
-        </article>
-        <article class="skill">
-          <h3>/directions</h3>
-          <p class="what">2-4 visual design variants rendered live side by side, light/dark toggle.</p>
-          <span class="path">docs/directions/&lt;date&gt;-&lt;slug&gt;.html</span>
-        </article>
-        <article class="skill">
-          <h3>/roadmap</h3>
-          <p class="what">Implementation plan: milestones, data-flow SVG, mockups, code, risks, open questions.</p>
-          <span class="path">docs/roadmaps/&lt;date&gt;-&lt;slug&gt;.html</span>
-        </article>
-        <article class="skill">
-          <h3>/design <span class="meta">(opt-in)</span></h3>
-          <p class="what">Codify the project's design language as a Markdown contract every AI tool reads, plus an interactive HTML showroom with live tweaking.</p>
-          <span class="path">DESIGN.md + docs/design/index.html</span>
-        </article>
-      </div>
-
-      <div class="install-html" role="region" aria-label="Install the HTML bundle">
-        <span class="prompt" aria-hidden="true">$</span>
-        <code>aikit add --html</code>
-        <span class="meta">installs the 4 always-on skills · add <code>design</code> separately with <code>aikit add design</code></span>
-      </div>
-    </section>
-
-    <!-- ============ does /design actually help? ============ -->
-    <section aria-labelledby="proof-h">
-      <h2 id="proof-h">Does <code>/design</code> actually help?</h2>
-      <p class="section-intro">We ran the same four prompts twice — once with the skill installed, once freestyle. Same model, same inputs. The skill's job is to make the freestyle answer disappear.</p>
-
-      <table class="compare-table" aria-label="Pass-rate comparison across four scenarios">
-        <thead>
-          <tr><th>The ask</th><th>With <code>/design</code></th><th>Without</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>"Read my homepage HTML, build a DESIGN.md"</td>
-            <td class="win">86%</td>
-            <td>71%</td>
-          </tr>
-          <tr>
-            <td>"Just synthesize one — here's the vibe"</td>
-            <td class="win">86%</td>
-            <td class="lose">43%</td>
-          </tr>
-          <tr>
-            <td>"Tweak the primary color, leave the rest alone"</td>
-            <td>100%</td>
-            <td>100%</td>
-          </tr>
-          <tr>
-            <td>"Build it from this screenshot"</td>
-            <td class="win">100%</td>
-            <td class="lose">57%</td>
-          </tr>
-          <tr class="total">
-            <td>Average across all four</td>
-            <td class="win">93%</td>
-            <td>68%</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <p class="compare-takeaway"><strong>+25 points on average.</strong> The freestyle AI usually misses three things: it forgets the marker-bounded sections (so <code>/design refine</code> can't surgically update a single block later), it puts hex codes outside backticks (the showroom's color pickers can't bind to them), and it ignores parts of the brief — "no gray" turned into "five shades of gray." <code>/design</code> bakes all three in.</p>
-    </section>
+    <p class="install-note">Then run <code>aikit</code> — 30-second wizard. Headless: <code>aikit --yes --tools=claude</code></p>
 
     <!-- ============ cross-tool diagram ============ -->
     <section aria-labelledby="cross-h">
@@ -440,6 +562,103 @@
       </div>
     </section>
 
+    <!-- ============ HTML skills ============ -->
+    <section aria-labelledby="html-h">
+      <h2 id="html-h">Four HTML skills</h2>
+      <p class="section-intro">Each one turns a single prompt into one self-contained HTML file you can open in a browser and commit to git. No build step, no CDN, no dependencies.</p>
+
+      <div class="skills">
+        <article class="skill">
+          <h3>/docs</h3>
+          <p class="what">Living project documentation. Edits one section at a time via marker-bounded blocks.</p>
+          <span class="path">docs/&lt;area&gt;.html</span>
+        </article>
+        <article class="skill">
+          <h3>/decide</h3>
+          <p class="what">Tradeoff page for 2-4 technical options. Cards, comparison, recommendation.</p>
+          <span class="path">docs/decisions/&lt;date&gt;-&lt;slug&gt;.html</span>
+        </article>
+        <article class="skill">
+          <h3>/directions</h3>
+          <p class="what">2-4 visual design variants rendered live side by side, light/dark toggle.</p>
+          <span class="path">docs/directions/&lt;date&gt;-&lt;slug&gt;.html</span>
+        </article>
+        <article class="skill">
+          <h3>/roadmap</h3>
+          <p class="what">Implementation plan: milestones, data-flow SVG, mockups, code, risks, open questions.</p>
+          <span class="path">docs/roadmaps/&lt;date&gt;-&lt;slug&gt;.html</span>
+        </article>
+      </div>
+
+      <div class="install-html" role="region" aria-label="Install the HTML bundle">
+        <span class="prompt" aria-hidden="true">$</span>
+        <code>aikit add --html</code>
+        <span class="meta">installs all four · skills, slash commands, and templates</span>
+      </div>
+    </section>
+
+    <!-- ============ /design feature card ============ -->
+    <section aria-labelledby="design-feature-h" class="design-feature">
+      <article class="feature-card">
+        <div class="feature-head">
+          <div class="feature-lead">
+            <h2 id="design-feature-h" class="feature-title">/design <span class="feature-tag">opt-in</span></h2>
+            <p class="feature-lede">Codify the project's visual language as a <code>DESIGN.md</code> contract every AI tool reads — plus an interactive HTML showroom with live color and font tweaking. The one skill that ships its own opinion.</p>
+            <p class="feature-note"><span class="wip-dot" aria-hidden="true">●</span> Benchmark re-running after a rebuild — figures below are from the prior eval pass and will be re-validated before being treated as canonical.</p>
+          </div>
+        </div>
+        <div class="feature-foot">
+          <div class="install-html" role="region" aria-label="Install design skill">
+            <span class="prompt" aria-hidden="true">$</span>
+            <code>aikit add design</code>
+            <span class="meta">DESIGN.md + showroom + slash command</span>
+          </div>
+          <a class="feature-jump" href="#proof-h">see the benchmark ↓</a>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============ does /design actually help? ============ -->
+    <section aria-labelledby="proof-h">
+      <h2 id="proof-h">Does <code>/design</code> actually help?</h2>
+      <p class="section-intro">We ran the same four prompts twice — once with the skill installed, once freestyle. Same model, same inputs. The skill's job is to make the freestyle answer disappear.</p>
+
+      <table class="compare-table" aria-label="Pass-rate comparison across four scenarios">
+        <thead>
+          <tr><th>The ask</th><th>With <code>/design</code></th><th>Without</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>"Read my homepage HTML, build a DESIGN.md"</td>
+            <td class="win">86%</td>
+            <td>71%</td>
+          </tr>
+          <tr>
+            <td>"Just synthesize one — here's the vibe"</td>
+            <td class="win">86%</td>
+            <td class="lose">43%</td>
+          </tr>
+          <tr>
+            <td>"Tweak the primary color, leave the rest alone"</td>
+            <td>100%</td>
+            <td>100%</td>
+          </tr>
+          <tr>
+            <td>"Build it from this screenshot"</td>
+            <td class="win">100%</td>
+            <td class="lose">57%</td>
+          </tr>
+          <tr class="total">
+            <td>Average across all four</td>
+            <td class="win">93%</td>
+            <td>68%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="compare-takeaway"><strong>+25 points on average.</strong> The freestyle AI usually misses three things: it forgets the marker-bounded sections (so <code>/design refine</code> can't surgically update a single block later), it puts hex codes outside backticks (the showroom's color pickers can't bind to them), and it ignores parts of the brief — "no gray" turned into "five shades of gray." <code>/design</code> bakes all three in.</p>
+    </section>
+
     <!-- ============ what else ============ -->
     <section aria-labelledby="else-h">
       <h2 id="else-h">What else you get</h2>
@@ -461,6 +680,39 @@
           <h3>Production-ready</h3>
           <p>169 tests pass, format correctness audited against each tool's official docs, path-traversal guard on user input. See <a href="https://github.com/Hamad-Center/haac-aikit/blob/main/AUDIT.md">AUDIT.md</a> for the trail.</p>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ Recently shipped ============ -->
+    <section id="shipped" aria-labelledby="shipped-h">
+      <h2 id="shipped-h">Recently shipped</h2>
+      <p class="section-intro">Full history in the <a href="https://github.com/Hamad-Center/haac-aikit/blob/main/CHANGELOG.md">changelog</a>.</p>
+
+      <div class="shipped">
+        <article class="shipped-card">
+          <span class="ver">v0.14.0</span>
+          <span class="date">May 16, 2026</span>
+          <span class="badge">breaking</span>
+          <p class="lede">Skills moved to folder format — <code>&lt;name&gt;/SKILL.md</code>. Sibling files like <code>references/</code> ride along with each skill. The flat <code>.md</code> layout no longer validates.</p>
+
+          <h4>Fixed</h4>
+          <ul>
+            <li><code>aikit init</code> was silently shipping zero skills — six consumers in <code>src/</code> still grepped <code>.md</code> files inside folders after the prior migration.</li>
+            <li><code>aikit add --html</code> aborted with "bundled skill missing in catalog" (used the old flat path).</li>
+            <li>Conflict resolution renamed every folder-format skill to <code>"SKILL"</code> (basename match against <code>.md</code>).</li>
+            <li>Orchestrator agent delegated to <code>backend</code> / <code>frontend</code> / <code>mobile</code> without checking they were installed (tier2 / opt-in).</li>
+          </ul>
+
+          <h4>Hardened</h4>
+          <ul>
+            <li><code>catalog-check</code> rejects unrecognized entries at tier roots (typos, stray files, <code>SKILL.md</code> at the wrong level).</li>
+            <li><code>allowed-tools:</code> required to be non-empty — bare or empty lists previously passed validation.</li>
+          </ul>
+
+          <p class="migration"><strong>Migration:</strong> re-run <code>aikit sync</code> after upgrading. Your <code>.aikitrc.json</code> is forward-compatible. Tests: 169/169 pass.</p>
+
+          <a class="cl" href="https://github.com/Hamad-Center/haac-aikit/blob/main/CHANGELOG.md#0140---2026-05-16">full changelog →</a>
+        </article>
       </div>
     </section>
 
