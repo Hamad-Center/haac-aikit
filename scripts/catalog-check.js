@@ -68,9 +68,94 @@ function checkAgents() {
   );
 }
 
-checkAgents();
-checkLivingDocsTemplates();
-console.log("catalog-check: all checks passed");
+function checkSkills() {
+  const skillsRoot = join(repoRoot, "catalog", "skills");
+  if (!existsSync(skillsRoot) || !statSync(skillsRoot).isDirectory()) {
+    fail(`missing required directory ${skillsRoot}`);
+  }
+
+  const tierDirs = ["tier1", "tier2"];
+  const namesByTier = {};
+
+  for (const tier of tierDirs) {
+    const dir = join(skillsRoot, tier);
+    if (!existsSync(dir) || !statSync(dir).isDirectory()) {
+      fail(`missing required directory catalog/skills/${tier}/`);
+    }
+
+    // Reject any loose .md at tier root — all skills must be folders.
+    const looseMd = readdirSync(dir).filter(
+      (f) => f.endsWith(".md") && statSync(join(dir, f)).isFile()
+    );
+    if (looseMd.length > 0) {
+      fail(
+        `catalog/skills/${tier}/ must not contain flat .md files ` +
+        `(found: ${looseMd.join(", ")}). Each skill lives in its own folder ` +
+        `with a SKILL.md entry point — e.g. ${tier}/<name>/SKILL.md.`
+      );
+    }
+
+    // Collect skill directories.
+    namesByTier[tier] = readdirSync(dir).filter((entry) => {
+      const entryPath = join(dir, entry);
+      return statSync(entryPath).isDirectory();
+    });
+  }
+
+  // Reject same-name collisions across tiers.
+  const tier1Set = new Set(namesByTier.tier1);
+  const collisions = namesByTier.tier2.filter((n) => tier1Set.has(n));
+  if (collisions.length > 0) {
+    fail(`skill names appear in both tier1 and tier2: ${collisions.join(", ")}`);
+  }
+
+  // Validate each skill folder.
+  for (const tier of tierDirs) {
+    for (const name of namesByTier[tier]) {
+      const skillDir = join(skillsRoot, tier, name);
+      const skillFile = join(skillDir, "SKILL.md");
+
+      if (!existsSync(skillFile)) {
+        fail(`${skillDir}/ missing required SKILL.md entry point`);
+      }
+
+      const content = readFileSync(skillFile, "utf8");
+      const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+      if (!fmMatch) {
+        fail(`${skillFile} missing YAML frontmatter`);
+      }
+      const fm = fmMatch[1];
+
+      // `name:` must match the folder name.
+      const nameMatch = fm.match(/^name:\s*(.+?)\s*$/m);
+      if (!nameMatch) {
+        fail(`${skillFile} frontmatter missing 'name:'`);
+      }
+      if (nameMatch[1] !== name) {
+        fail(
+          `${skillFile} frontmatter name '${nameMatch[1]}' does not match folder name '${name}'`
+        );
+      }
+
+      // `description:` required.
+      if (!/^description:/m.test(fm)) {
+        fail(`${skillFile} frontmatter missing 'description:'`);
+      }
+
+      // `allowed-tools:` required — least-privilege declaration.
+      if (!/^allowed-tools:/m.test(fm)) {
+        fail(
+          `${skillFile} frontmatter missing 'allowed-tools:' — every skill must ` +
+          `declare which tools it needs (least-privilege).`
+        );
+      }
+    }
+  }
+
+  console.log(
+    `catalog-check: skills OK (${namesByTier.tier1.length} tier1, ${namesByTier.tier2.length} tier2)`
+  );
+}
 
 function checkLivingDocsTemplates() {
   // The HTML-artifact skills (/docs, /decide, /directions, /roadmap) each ship
@@ -90,10 +175,10 @@ function checkLivingDocsTemplates() {
 
   // Confirm matching skill + command files exist alongside the templates.
   const requiredSkillsAndCommands = [
-    join(repoRoot, "catalog", "skills", "tier1", "docs.md"),
-    join(repoRoot, "catalog", "skills", "tier1", "decide.md"),
-    join(repoRoot, "catalog", "skills", "tier1", "directions.md"),
-    join(repoRoot, "catalog", "skills", "tier1", "roadmap.md"),
+    join(repoRoot, "catalog", "skills", "tier1", "docs", "SKILL.md"),
+    join(repoRoot, "catalog", "skills", "tier1", "decide", "SKILL.md"),
+    join(repoRoot, "catalog", "skills", "tier1", "directions", "SKILL.md"),
+    join(repoRoot, "catalog", "skills", "tier1", "roadmap", "SKILL.md"),
     join(repoRoot, "catalog", "commands", "docs.md"),
     join(repoRoot, "catalog", "commands", "decide.md"),
     join(repoRoot, "catalog", "commands", "directions.md"),
@@ -109,3 +194,8 @@ function checkLivingDocsTemplates() {
     `catalog-check: living-docs templates OK (${requiredTemplates.length} templates, ${requiredSkillsAndCommands.length} catalog entries)`
   );
 }
+
+checkAgents();
+checkSkills();
+checkLivingDocsTemplates();
+console.log("catalog-check: all checks passed");
