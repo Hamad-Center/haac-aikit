@@ -49,6 +49,27 @@ describe("sync — Claude assets", () => {
     expect(Array.isArray(rulesCfg.rules)).toBe(true);
   });
 
+  it("installs tier1 + tier2 skills as folder-format SKILL.md files", async () => {
+    writeConfig(baseConfig);
+
+    await runSync({ _: ["sync"] });
+
+    // Spot-check a representative skill from each tier — the regression that
+    // motivated this test had sync silently installing zero skills.
+    expect(existsSync(".claude/skills/brainstorming/SKILL.md")).toBe(true);
+    expect(existsSync(".claude/skills/api-design/SKILL.md")).toBe(true);
+
+    // Sibling files in a skill folder (spec-kit/references/*) must ride along.
+    expect(existsSync(".claude/skills/spec-kit/references/constitution.md")).toBe(true);
+
+    // Sanity floor: at least 14 tier1 + 12 tier2 skills as of this PR.
+    const installed = readFileSync(
+      ".claude/skills/brainstorming/SKILL.md",
+      "utf8",
+    );
+    expect(installed).toContain("name: brainstorming");
+  });
+
   it("does NOT ship the Claude assets when claude is not selected", async () => {
     writeConfig({ ...baseConfig, tools: ["cursor"] });
 

@@ -1,8 +1,13 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import kleur from "kleur";
 import { readConfig } from "../fs/readConfig.js";
-import { CATALOG_ROOT, loadCatalog } from "../catalog/index.js";
+import {
+  CATALOG_ROOT,
+  listSkillFolders,
+  loadCatalog,
+  skillFolder,
+} from "../catalog/index.js";
 import type { AikitConfig, CliArgs } from "../types.js";
 
 export async function runDiff(argv: CliArgs): Promise<void> {
@@ -36,8 +41,8 @@ export async function runDiff(argv: CliArgs): Promise<void> {
   }
 
   // Check skill files
-  checkCatalogDir("skills/tier1", ".claude/skills", missing, drifted);
-  checkCatalogDir("skills/tier2", ".claude/skills", missing, drifted);
+  checkCatalogSkillTier("tier1", missing, drifted);
+  checkCatalogSkillTier("tier2", missing, drifted);
   checkCatalogDir("agents/tier1", ".claude/agents", missing, drifted);
   checkCatalogAgentsTier2(config, missing, drifted);
   checkCatalogDir("hooks", ".claude/hooks", missing, drifted, [".sh"]);
@@ -114,6 +119,42 @@ function checkCatalogAgentsTier2(
       drifted.push(`agents/${name}.md`);
     }
   }
+}
+
+function checkCatalogSkillTier(
+  tier: "tier1" | "tier2",
+  missing: string[],
+  drifted: string[],
+): void {
+  const destRoot = ".claude/skills";
+  for (const name of listSkillFolders(tier)) {
+    const srcRoot = skillFolder(tier, name);
+    for (const srcFile of walkFiles(srcRoot)) {
+      const rel = relative(srcRoot, srcFile);
+      const destFile = join(destRoot, name, rel);
+      if (!existsSync(destFile)) {
+        missing.push(destFile);
+        continue;
+      }
+      if (readFileSync(srcFile, "utf8") !== readFileSync(destFile, "utf8")) {
+        drifted.push(destFile);
+      }
+    }
+  }
+}
+
+function walkFiles(root: string): string[] {
+  const out: string[] = [];
+  if (!existsSync(root)) return out;
+  for (const entry of readdirSync(root)) {
+    const full = join(root, entry);
+    if (statSync(full).isDirectory()) {
+      out.push(...walkFiles(full));
+    } else {
+      out.push(full);
+    }
+  }
+  return out;
 }
 
 function checkCatalogDir(

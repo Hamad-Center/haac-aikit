@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import kleur from "kleur";
+import { listInstalledSkillFolders } from "../catalog/index.js";
 import { readConfig } from "../fs/readConfig.js";
 import { extractRuleIds } from "../render/rule-ids.js";
 import type { CliArgs } from "../types.js";
@@ -96,30 +97,26 @@ export async function runDoctor(argv: CliArgs): Promise<void> {
     }
   }
 
-  // 5. Skills count
-  {
-    const skillsDir = ".claude/skills";
-    if (existsSync(skillsDir)) {
-      const count = readdirSync(skillsDir).filter((f) => f.endsWith(".md")).length;
-      findings.push({ level: "ok", check: "skills", message: `${count} installed` });
-    } else {
-      findings.push({ level: "warn", check: "skills", message: "Not installed — run `aikit sync`" });
-    }
+  // 5. Skills count (folder-format: each skill is .claude/skills/<name>/SKILL.md)
+  const skillsDir = ".claude/skills";
+  const installedSkills = listInstalledSkillFolders(skillsDir);
+  if (existsSync(skillsDir)) {
+    findings.push({ level: "ok", check: "skills", message: `${installedSkills.length} installed` });
+  } else {
+    findings.push({ level: "warn", check: "skills", message: "Not installed — run `aikit sync`" });
   }
 
   // 6. Skill description length (≤600 chars)
-  const skillsDir = ".claude/skills";
-  if (existsSync(skillsDir)) {
-    const skills = readdirSync(skillsDir).filter((f) => f.endsWith(".md"));
+  if (installedSkills.length > 0) {
     let descErrors = 0;
-    for (const skill of skills) {
-      const content = readFileSync(join(skillsDir, skill), "utf8");
+    for (const name of installedSkills) {
+      const content = readFileSync(join(skillsDir, name, "SKILL.md"), "utf8");
       const descMatch = content.match(/^description:\s*(.+)$/m);
       if (descMatch?.[1] && (descMatch[1] as string).length > 600) {
         descErrors++;
         findings.push({
           level: "warn",
-          check: `skill:${skill}`,
+          check: `skill:${name}`,
           message: `description is ${(descMatch[1] as string).length} chars — exceeds 600-char limit`,
         });
       }

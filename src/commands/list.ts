@@ -1,7 +1,11 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import kleur from "kleur";
-import { CATALOG_ROOT } from "../catalog/index.js";
+import {
+  CATALOG_ROOT,
+  listInstalledSkillFolders,
+  listSkillFolders,
+} from "../catalog/index.js";
 import type { CliArgs } from "../types.js";
 
 interface CatalogItem {
@@ -11,8 +15,8 @@ interface CatalogItem {
 
 export async function runList(_argv: CliArgs): Promise<void> {
   const sections: { label: string; items: CatalogItem[] }[] = [
-    { label: "Skills — Tier 1", items: listCategory("skills/tier1", ".claude/skills") },
-    { label: "Skills — Tier 2", items: listCategory("skills/tier2", ".claude/skills") },
+    { label: "Skills — Tier 1", items: listSkills("tier1") },
+    { label: "Skills — Tier 2", items: listSkills("tier2") },
     { label: "Agents — Tier 1", items: listCategory("agents/tier1", ".claude/agents") },
     { label: "Agents — Tier 2", items: listCategory("agents/tier2", ".claude/agents") },
     { label: "Slash commands", items: listCategory("commands", ".claude/commands") },
@@ -42,6 +46,14 @@ export async function runList(_argv: CliArgs): Promise<void> {
       `Run ${kleur.cyan("aikit add <name>")} to install individual items, or ${kleur.cyan("aikit sync")} to install all.\n`
     );
   }
+}
+
+function listSkills(tier: "tier1" | "tier2"): CatalogItem[] {
+  const installed = new Set(listInstalledSkillFolders(".claude/skills"));
+  return listSkillFolders(tier).map((name) => ({
+    name,
+    installed: installed.has(name),
+  }));
 }
 
 function listCategory(
