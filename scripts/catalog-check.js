@@ -224,7 +224,54 @@ function checkLivingDocsTemplates() {
   );
 }
 
+function checkDesignSkill() {
+  // /design is opt-in (tier2) and only validated when present. The skill ships
+  // its own slash command + template pack — if any one of those four is in the
+  // catalog, the rest must be too, or `aikit add design` will fail partway.
+  const skillFile = join(repoRoot, "catalog", "skills", "tier2", "design", "SKILL.md");
+  if (!existsSync(skillFile)) {
+    // /design isn't installed in this catalog (fixture-based tests, slim
+    // configurations). Skip validation rather than failing.
+    return;
+  }
+  const required = [
+    skillFile,
+    join(repoRoot, "catalog", "commands", "design.md"),
+    join(repoRoot, "catalog", "templates", "design", "starter-DESIGN.md"),
+    join(repoRoot, "catalog", "templates", "design", "template.html"),
+  ];
+  for (const path of required) {
+    if (!existsSync(path)) {
+      fail(`/design skill is in the catalog but companion file is missing: ${path}`);
+    }
+  }
+
+  // Confirm the starter has all five marker-bounded sections. The /design
+  // refine subcommand relies on `readSection` / `writeSection` finding these.
+  const starter = readFileSync(required[2], "utf8");
+  const sections = ["atmosphere", "colors", "typography", "components", "layout"];
+  for (const id of sections) {
+    if (!starter.includes(`<!-- BEGIN:haac-aikit:section:${id} -->`)) {
+      fail(`starter-DESIGN.md missing BEGIN marker for section '${id}'`);
+    }
+    if (!starter.includes(`<!-- END:haac-aikit:section:${id} -->`)) {
+      fail(`starter-DESIGN.md missing END marker for section '${id}'`);
+    }
+  }
+
+  // Confirm the showroom template has DOM hooks the JS depends on.
+  const showroom = readFileSync(required[3], "utf8");
+  for (const id of sections) {
+    if (!showroom.includes(`data-aikit-section="${id}"`)) {
+      fail(`template.html missing data-aikit-section="${id}" DOM hook`);
+    }
+  }
+
+  console.log(`catalog-check: /design skill OK (${required.length} files, ${sections.length} marker sections)`);
+}
+
 checkAgents();
 checkSkills();
 checkLivingDocsTemplates();
+checkDesignSkill();
 console.log("catalog-check: all checks passed");

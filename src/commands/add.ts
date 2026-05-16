@@ -89,6 +89,17 @@ export async function runAdd(argv: CliArgs): Promise<void> {
   const dryPrefix = argv["dry-run"] ? "[dry-run] " : "";
   process.stdout.write(`${dryPrefix}${kleur.green("✓")} Added ${found.destLabel}\n`);
 
+  // For skills, also install matching slash command and template pack if the
+  // catalog ships them. This is how tier2 skills bundle their own opinionated
+  // companion artifacts (e.g. /design ships a slash command + DESIGN.md starter
+  // + interactive showroom HTML).
+  if (found.type === "skill") {
+    installSkillCompanions(found.name, {
+      dryRun: argv["dry-run"] ?? false,
+      force: argv.force ?? false,
+    });
+  }
+
   // Persist the addition so the next `aikit sync` reproduces it.
   if (!argv["dry-run"]) {
     const configChange = updateConfigForAddition(argv.config, found);
@@ -171,6 +182,55 @@ async function runAddHtmlBundle(argv: CliArgs): Promise<void> {
     ? `Would install ${installed} files${skipped ? `, skip ${skipped} existing` : ""}.`
     : `Installed ${installed} files${skipped ? `, skipped ${skipped} existing` : ""}. Use ${kleur.cyan("--force")} to overwrite.`;
   process.stdout.write(`\n${summary}\n`);
+}
+
+interface CompanionOptions {
+  dryRun: boolean;
+  force: boolean;
+}
+
+/**
+ * Install companion artifacts that ship alongside a skill: the matching slash
+ * command (`catalog/commands/<name>.md` → `.claude/commands/`) and any template
+ * pack (`catalog/templates/<name>/` → `.aikit/templates/<name>/`).
+ *
+ * Both are optional — skills that don't bundle companions simply install no
+ * extras. Mirrors the bundle logic in `runAddHtmlBundle` so any tier2 skill
+ * that ships a slash command + templates works out of the box.
+ */
+function installSkillCompanions(name: string, opts: CompanionOptions): void {
+  const dryPrefix = opts.dryRun ? "[dry-run] " : "";
+
+  // Matching slash command.
+  const cmdSrc = join(CATALOG_ROOT, "commands", `${name}.md`);
+  if (existsSync(cmdSrc)) {
+    const cmdDest = join(".claude/commands", `${name}.md`);
+    if (existsSync(cmdDest) && !opts.force) {
+      process.stdout.write(`  ${kleur.dim("·")} command /${name} (already installed; --force to overwrite)\n`);
+    } else {
+      if (!opts.dryRun) {
+        mkdirSync(".claude/commands", { recursive: true });
+        copyFileSync(cmdSrc, cmdDest);
+      }
+      process.stdout.write(`${dryPrefix}  ${kleur.green("+")} command .claude/commands/${name}.md\n`);
+    }
+  }
+
+  // Template pack — every file in `catalog/templates/<name>/`.
+  const tplSrcDir = join(CATALOG_ROOT, "templates", name);
+  if (existsSync(tplSrcDir)) {
+    const tplDestDir = join(".aikit/templates", name);
+    if (!opts.dryRun) mkdirSync(tplDestDir, { recursive: true });
+    for (const file of readdirSync(tplSrcDir).filter((f) => /\.(html|json|md)$/.test(f))) {
+      const destFile = join(tplDestDir, file);
+      if (existsSync(destFile) && !opts.force) {
+        process.stdout.write(`  ${kleur.dim("·")} template ${name}/${file} (already installed; --force to overwrite)\n`);
+        continue;
+      }
+      if (!opts.dryRun) copyFileSync(join(tplSrcDir, file), destFile);
+      process.stdout.write(`${dryPrefix}  ${kleur.green("+")} template .aikit/templates/${name}/${file}\n`);
+    }
+  }
 }
 
 function findCatalogItem(name: string): FoundItem | null {

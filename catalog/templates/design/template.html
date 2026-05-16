@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>/design — showroom</title>
+  <style>
+    :root,
+    [data-theme="light"] {
+      --bg:       #FAFAFA;
+      --ink:      #1A1A1A;
+      --accent:   #D97757;
+      --muted:    #787878;
+      --surface:  #FFFFFF;
+      --hairline: #E5E5E5;
+      --font-head: ui-serif, Georgia, "Times New Roman", serif;
+      --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "Fira Code", "JetBrains Mono", monospace;
+    }
+    [data-theme="dark"] {
+      --bg:       #1A1714;
+      --ink:      #FAFAFA;
+      --accent:   #E08C70;
+      --muted:    #8A8682;
+      --surface:  #211D18;
+      --hairline: #2A2A2A;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+      font-size: 16px;
+      transition: background 160ms, color 160ms;
+    }
+    .page { max-width: 980px; margin: 0 auto; padding: 48px 24px 96px; }
+
+    /* ---- header ---- */
+    header.top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 48px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    header.top h1 {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+      color: var(--accent);
+    }
+    header.top h1 .sub {
+      color: var(--muted);
+      font-weight: 400;
+      margin-left: 4px;
+    }
+    header.top .spacer { flex: 1; }
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      padding: 8px 14px;
+      background: transparent;
+      border: 1px solid var(--hairline);
+      color: var(--ink);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 120ms, color 120ms;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.copied { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+
+    /* ---- section ---- */
+    section[data-aikit-section] {
+      margin-bottom: 56px;
+    }
+    section h2 {
+      font-family: var(--font-head);
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 16px;
+      letter-spacing: -0.01em;
+    }
+    section h2 .id {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-left: 10px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    section p { margin: 0 0 16px; max-width: 620px; color: var(--ink); }
+
+    /* ---- color palette ---- */
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .swatch {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .swatch .chip {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      flex: none;
+      border: 1px solid var(--hairline);
+    }
+    .swatch .meta { font-size: 13px; flex: 1; min-width: 0; }
+    .swatch .meta .role { font-weight: 600; }
+    .swatch .meta .hex { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+    .swatch input[type="color"] {
+      width: 28px; height: 28px; padding: 0; border: 1px solid var(--hairline);
+      border-radius: 4px; cursor: pointer; background: var(--surface);
+    }
+
+    /* ---- preview stage ---- */
+    .preview-stage {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: 10px;
+      padding: 24px;
+      margin-top: 20px;
+    }
+    .preview-stage h3 { font-family: var(--font-head); font-size: 18px; margin: 0 0 8px; }
+    .preview-stage p  { margin: 0 0 16px; color: var(--muted); }
+    .preview-stage .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--ink); color: var(--bg); border: 1px solid var(--ink);
+      border-radius: 6px; padding: 8px 16px; font-family: var(--font-body); font-size: 14px;
+      cursor: pointer; transition: background 120ms;
+    }
+    .btn-primary:hover { background: var(--accent); border-color: var(--accent); }
+    .btn-secondary {
+      background: transparent; color: var(--ink); border: 1px solid var(--hairline);
+      border-radius: 6px; padding: 8px 16px; font-family: var(--font-body); font-size: 14px;
+      cursor: pointer; transition: border-color 120ms;
+    }
+    .btn-secondary:hover { border-color: var(--ink); }
+
+    /* ---- typography ---- */
+    .type-row {
+      display: flex; align-items: baseline; gap: 14px;
+      padding: 14px 0; border-bottom: 1px solid var(--hairline);
+    }
+    .type-row:last-child { border-bottom: none; }
+    .type-row .label { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); width: 90px; flex: none; }
+    .type-row select {
+      font-family: var(--font-mono); font-size: 12px;
+      background: var(--surface); border: 1px solid var(--hairline);
+      border-radius: 4px; padding: 4px 8px; color: var(--ink);
+    }
+    .specimen-h { font-family: var(--font-head); font-size: 28px; flex: 1; }
+    .specimen-b { font-family: var(--font-body); font-size: 16px; flex: 1; }
+    .specimen-m { font-family: var(--font-mono); font-size: 14px; flex: 1; }
+
+    /* ---- components ---- */
+    .components-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .components-grid { grid-template-columns: 1fr; } }
+    .demo-card {
+      background: var(--surface); border: 1px solid var(--hairline); border-radius: 10px;
+      padding: 18px 20px; transition: border-color 120ms;
+    }
+    .demo-card:hover { border-color: var(--accent); }
+    .demo-card h4 { font-family: var(--font-mono); font-size: 13px; color: var(--accent); margin: 0 0 8px; }
+    .demo-card p { margin: 0 0 12px; font-size: 14.5px; color: var(--ink); }
+    .demo-input {
+      background: var(--surface); border: 1px solid var(--hairline); border-radius: 6px;
+      padding: 8px 12px; font-family: var(--font-body); font-size: 14px;
+      width: 100%; color: var(--ink);
+    }
+    .demo-input:focus { outline: none; border-color: var(--accent); }
+
+    /* ---- layout ---- */
+    .layout-spec { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+    .layout-spec dt { color: var(--muted); margin-top: 10px; }
+    .layout-spec dd { margin: 2px 0 0; padding-left: 12px; }
+    .breakpoint-bar {
+      display: flex; height: 24px; border-radius: 4px; overflow: hidden;
+      margin: 18px 0 0; border: 1px solid var(--hairline);
+    }
+    .breakpoint-bar div {
+      font-family: var(--font-mono); font-size: 10.5px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--surface);
+    }
+    .bp-mob { background: var(--muted); flex: 0 0 18%; }
+    .bp-tab { background: var(--ink); flex: 0 0 30%; }
+    .bp-desk { background: var(--accent); flex: 1; }
+
+    /* ---- footer ---- */
+    footer.bot {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--hairline);
+      font-family: var(--font-mono); font-size: 12px; color: var(--muted);
+    }
+    footer.bot a { color: var(--muted); text-decoration: none; border-bottom: 1px dotted currentColor; }
+    footer.bot a:hover { color: var(--accent); border-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main class="page">
+
+    <header class="top">
+      <h1>/design <span class="sub">— showroom</span></h1>
+      <div class="spacer"></div>
+      <button class="btn" id="copy-btn" type="button" aria-label="Copy current state as Markdown">Copy Markdown</button>
+      <button class="btn" id="theme-btn" type="button" aria-label="Toggle light or dark mode">Toggle theme</button>
+    </header>
+
+    <!-- ============ ATMOSPHERE ============ -->
+    <section data-aikit-section="atmosphere">
+      <h2>Atmosphere <span class="id">atmosphere</span></h2>
+      <p id="atmosphere-body">Quiet, ivory-and-clay, serif headlines, hairline borders. No shadows, no gradients. Hover-only motion — nothing animates on idle. The interface fades into the content.</p>
+    </section>
+
+    <!-- ============ COLORS ============ -->
+    <section data-aikit-section="colors">
+      <h2>Colors <span class="id">colors</span></h2>
+      <p>Each color is described by hex code plus a plain-language role. Pickers below update CSS custom properties live.</p>
+
+      <div class="palette" id="palette">
+        <div class="swatch" data-role="bg">
+          <div class="chip" data-bind="bg"></div>
+          <div class="meta">
+            <div class="role">Background</div>
+            <div class="hex"><code>#FAFAFA</code></div>
+          </div>
+          <input type="color" value="#FAFAFA" data-target="--bg" aria-label="Pick background color">
+        </div>
+        <div class="swatch" data-role="ink">
+          <div class="chip" data-bind="ink"></div>
+          <div class="meta">
+            <div class="role">Ink</div>
+            <div class="hex"><code>#1A1A1A</code></div>
+          </div>
+          <input type="color" value="#1A1A1A" data-target="--ink" aria-label="Pick ink color">
+        </div>
+        <div class="swatch" data-role="accent">
+          <div class="chip" data-bind="accent"></div>
+          <div class="meta">
+            <div class="role">Accent</div>
+            <div class="hex"><code>#D97757</code></div>
+          </div>
+          <input type="color" value="#D97757" data-target="--accent" aria-label="Pick accent color">
+        </div>
+        <div class="swatch" data-role="muted">
+          <div class="chip" data-bind="muted"></div>
+          <div class="meta">
+            <div class="role">Muted</div>
+            <div class="hex"><code>#787878</code></div>
+          </div>
+          <input type="color" value="#787878" data-target="--muted" aria-label="Pick muted color">
+        </div>
+        <div class="swatch" data-role="surface">
+          <div class="chip" data-bind="surface"></div>
+          <div class="meta">
+            <div class="role">Surface</div>
+            <div class="hex"><code>#FFFFFF</code></div>
+          </div>
+          <input type="color" value="#FFFFFF" data-target="--surface" aria-label="Pick surface color">
+        </div>
+        <div class="swatch" data-role="hairline">
+          <div class="chip" data-bind="hairline"></div>
+          <div class="meta">
+            <div class="role">Hairline</div>
+            <div class="hex"><code>#E5E5E5</code></div>
+          </div>
+          <input type="color" value="#E5E5E5" data-target="--hairline" aria-label="Pick hairline color">
+        </div>
+      </div>
+
+      <div class="preview-stage">
+        <h3>Live preview</h3>
+        <p>The buttons and cards below render with the current palette. Change a swatch above to see the impact immediately.</p>
+        <div class="row">
+          <button class="btn-primary" type="button">Primary action</button>
+          <button class="btn-secondary" type="button">Secondary</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TYPOGRAPHY ============ -->
+    <section data-aikit-section="typography">
+      <h2>Typography <span class="id">typography</span></h2>
+      <p>Font stacks quoted in full so they survive the absence of any single typeface.</p>
+
+      <div class="type-row">
+        <span class="label">Headlines</span>
+        <span class="specimen-h">The quick brown fox</span>
+        <select data-target="--font-head" aria-label="Switch headline font">
+          <option value='ui-serif, Georgia, "Times New Roman", serif' selected>ui-serif (Georgia)</option>
+          <option value='"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif'>Iowan Old Style</option>
+          <option value='"Charter", "Bitstream Charter", Cambria, Georgia, serif'>Charter</option>
+          <option value='system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'>system-ui (sans)</option>
+        </select>
+      </div>
+
+      <div class="type-row">
+        <span class="label">Body</span>
+        <span class="specimen-b">The quick brown fox jumps over the lazy dog. Plain body copy, set in the body face.</span>
+        <select data-target="--font-body" aria-label="Switch body font">
+          <option value='system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' selected>system-ui</option>
+          <option value='"Inter", system-ui, sans-serif'>Inter</option>
+          <option value='-apple-system-body, sans-serif'>apple-system-body</option>
+          <option value='ui-serif, Georgia, serif'>ui-serif</option>
+        </select>
+      </div>
+
+      <div class="type-row">
+        <span class="label">Mono</span>
+        <span class="specimen-m">const x = 42; // monospace</span>
+        <select data-target="--font-mono" aria-label="Switch mono font">
+          <option value='ui-monospace, "SF Mono", "Fira Code", "JetBrains Mono", monospace' selected>ui-monospace</option>
+          <option value='"Fira Code", ui-monospace, monospace'>Fira Code</option>
+          <option value='"JetBrains Mono", ui-monospace, monospace'>JetBrains Mono</option>
+          <option value='"Cascadia Code", ui-monospace, monospace'>Cascadia Code</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- ============ COMPONENTS ============ -->
+    <section data-aikit-section="components">
+      <h2>Components <span class="id">components</span></h2>
+      <p>Primitives rendered with the current palette and type stack. Hover the card to see the accent border.</p>
+
+      <div class="components-grid">
+        <div class="demo-card">
+          <h4>/card</h4>
+          <p>Surface element with hairline border. Hovers shift the border to the accent — no shadow, no lift.</p>
+          <button class="btn-primary" type="button">Action</button>
+        </div>
+        <div class="demo-card">
+          <h4>/input</h4>
+          <p>Bordered field with accent focus. No outline ring.</p>
+          <input class="demo-input" type="text" placeholder="Type something…">
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LAYOUT ============ -->
+    <section data-aikit-section="layout">
+      <h2>Layout <span class="id">layout</span></h2>
+      <p>Numerical specs — widths, gutters, breakpoints. No adjectival hand-waving.</p>
+
+      <dl class="layout-spec">
+        <dt>Content column</dt>
+        <dd>720px max-width, centered</dd>
+        <dt>Gutters</dt>
+        <dd>24px horizontal padding</dd>
+        <dt>Section rhythm</dt>
+        <dd>64px vertical between sections</dd>
+        <dt>Card grid</dt>
+        <dd>2 columns at full width, 12px gap, drops to 1 under 600px</dd>
+      </dl>
+
+      <div class="breakpoint-bar" aria-label="Breakpoint distribution">
+        <div class="bp-mob">&lt; 600 mobile</div>
+        <div class="bp-tab">600 – 960 tablet</div>
+        <div class="bp-desk">&gt; 960 desktop</div>
+      </div>
+    </section>
+
+    <footer class="bot">
+      Edit one section without touching the rest: <code>/design refine "&lt;change&gt;"</code> · Source of truth: <a href="../../DESIGN.md">DESIGN.md</a>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      // ---- Theme toggle ----
+      const themeBtn = document.getElementById("theme-btn");
+      themeBtn.addEventListener("click", function () {
+        const cur = document.documentElement.getAttribute("data-theme");
+        document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+      });
+
+      // ---- Color pickers → CSS custom properties ----
+      document.querySelectorAll('input[type="color"][data-target]').forEach(function (input) {
+        input.addEventListener("input", function () {
+          const prop = input.getAttribute("data-target");
+          document.documentElement.style.setProperty(prop, input.value);
+          // update the hex label next to it
+          const swatch = input.closest(".swatch");
+          if (swatch) {
+            const hexEl = swatch.querySelector(".hex code");
+            if (hexEl) hexEl.textContent = input.value.toUpperCase();
+          }
+        });
+        // initialize swatch chip color visually (uses the picker's current value)
+        const swatch = input.closest(".swatch");
+        if (swatch) {
+          const chip = swatch.querySelector(".chip");
+          if (chip) chip.style.background = input.value;
+          input.addEventListener("input", function () {
+            if (chip) chip.style.background = input.value;
+          });
+        }
+      });
+
+      // ---- Font dropdowns → CSS custom properties ----
+      document.querySelectorAll('select[data-target]').forEach(function (sel) {
+        sel.addEventListener("change", function () {
+          document.documentElement.style.setProperty(sel.getAttribute("data-target"), sel.value);
+        });
+      });
+
+      // ---- Copy Markdown ----
+      const copyBtn = document.getElementById("copy-btn");
+      copyBtn.addEventListener("click", function () {
+        const lines = [];
+        lines.push("# DESIGN");
+        lines.push("");
+        // atmosphere
+        const atmo = document.getElementById("atmosphere-body");
+        if (atmo) {
+          lines.push("## Atmosphere", "", atmo.textContent.trim(), "");
+        }
+        // colors
+        lines.push("## Colors", "");
+        lines.push("| Role | Hex |");
+        lines.push("|---|---|");
+        document.querySelectorAll('#palette .swatch').forEach(function (sw) {
+          const role = sw.querySelector('.role').textContent.trim();
+          const hex = sw.querySelector('.hex code').textContent.trim();
+          lines.push(`| ${role} | \`${hex}\` |`);
+        });
+        lines.push("");
+        // typography
+        lines.push("## Typography", "");
+        document.querySelectorAll('.type-row').forEach(function (row) {
+          const label = row.querySelector('.label').textContent.trim();
+          const sel = row.querySelector('select');
+          if (sel) lines.push(`- **${label}:** \`${sel.value}\``);
+        });
+        lines.push("");
+        // components and layout left as inherited from DESIGN.md (showroom doesn't override these structurally)
+        lines.push("> Components and layout sections are inherited from `DESIGN.md`. Paste this block as input to `/design refine \"<change>\"`.");
+        const text = lines.join("\n");
+        navigator.clipboard.writeText(text).then(function () {
+          copyBtn.textContent = "Copied";
+          copyBtn.classList.add("copied");
+          setTimeout(function () {
+            copyBtn.textContent = "Copy Markdown";
+            copyBtn.classList.remove("copied");
+          }, 1600);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
