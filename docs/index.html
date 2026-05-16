@@ -282,9 +282,10 @@
 <body>
   <main class="page">
 
-    <p class="eyebrow">v0.12 · MIT · pre-1.0</p>
+    <p class="eyebrow"><a href="https://github.com/Hamad-Center/haac-aikit/releases/tag/v0.14.0" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;">v0.14.0</a> · MIT · pre-1.0</p>
     <h1>One config, seven AI tools see it.</h1>
     <p class="tagline">A cross-tool AI-coding kit. Write your project rules once in <code>AGENTS.md</code>; haac-aikit fans them out — plus skills, agents, hooks, and MCP servers — to every selected tool in its native format.</p>
+    <p class="tagline" style="font-size:14.5px;margin-top:-8px;"><strong>New in 0.14:</strong> skills migrated to folder format (<code>.claude/skills/&lt;name&gt;/SKILL.md</code>) so references/ subtrees ride along with each skill. Breaking — re-run <code>aikit sync</code> after upgrading. <a href="https://github.com/Hamad-Center/haac-aikit/blob/main/CHANGELOG.md#0140---2026-05-16">Changelog →</a></p>
 
     <div class="tools-row" aria-label="Supported AI tools">
       <span>Claude Code</span>
@@ -458,7 +459,7 @@
         </div>
         <div class="feature">
           <h3>Production-ready</h3>
-          <p>152 tests pass, format correctness audited against each tool's official docs, path-traversal guard on user input, graceful 0.11→0.12 migration. See <a href="https://github.com/Hamad-Center/haac-aikit/blob/main/AUDIT.md">AUDIT.md</a> for the trail.</p>
+          <p>169 tests pass, format correctness audited against each tool's official docs, path-traversal guard on user input. See <a href="https://github.com/Hamad-Center/haac-aikit/blob/main/AUDIT.md">AUDIT.md</a> for the trail.</p>
         </div>
       </div>
     </section>
