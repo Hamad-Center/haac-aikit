@@ -604,8 +604,12 @@
           <div class="feature-lead">
             <h2 id="design-feature-h" class="feature-title">/design <span class="feature-tag">opt-in</span></h2>
             <p class="feature-lede">Codify the project's visual language as a <code>DESIGN.md</code> contract every AI tool reads — plus an interactive HTML showroom with live color and font tweaking. The one skill that ships its own opinion.</p>
-            <p class="feature-note"><span class="wip-dot" aria-hidden="true">●</span> Benchmark re-running after a rebuild — figures below are from the prior eval pass and will be re-validated before being treated as canonical.</p>
           </div>
+          <aside class="feature-stat" aria-label="Benchmark result">
+            <strong>+29</strong>
+            <span class="unit">pp</span>
+            <span class="caption">over baseline</span>
+          </aside>
         </div>
         <div class="feature-foot">
           <div class="install-html" role="region" aria-label="Install design skill">
@@ -621,42 +625,37 @@
     <!-- ============ does /design actually help? ============ -->
     <section aria-labelledby="proof-h">
       <h2 id="proof-h">Does <code>/design</code> actually help?</h2>
-      <p class="section-intro">We ran the same four prompts twice — once with the skill installed, once freestyle. Same model, same inputs. The skill's job is to make the freestyle answer disappear.</p>
+      <p class="section-intro">We ran the same prompts twice — once with the skill installed, once freestyle. Same model, same inputs, same binary rubric (see <a href="https://github.com/Hamad-Center/haac-aikit/blob/main/evals/design/rubric.md">evals/design/rubric.md</a>). The skill's job is to make the freestyle answer disappear.</p>
 
-      <table class="compare-table" aria-label="Pass-rate comparison across four scenarios">
+      <table class="compare-table" aria-label="Pass-rate comparison across three scenarios">
         <thead>
           <tr><th>The ask</th><th>With <code>/design</code></th><th>Without</th></tr>
         </thead>
         <tbody>
           <tr>
             <td>"Read my homepage HTML, build a DESIGN.md"</td>
-            <td class="win">86%</td>
+            <td class="win">100%</td>
             <td>71%</td>
           </tr>
           <tr>
-            <td>"Just synthesize one — here's the vibe"</td>
-            <td class="win">86%</td>
-            <td class="lose">43%</td>
-          </tr>
-          <tr>
-            <td>"Tweak the primary color, leave the rest alone"</td>
-            <td>100%</td>
-            <td>100%</td>
+            <td>"Synthesize one — here's the vibe"</td>
+            <td class="win">100%</td>
+            <td>71%</td>
           </tr>
           <tr>
             <td>"Build it from this screenshot"</td>
-            <td class="win">100%</td>
+            <td class="win">86%</td>
             <td class="lose">57%</td>
           </tr>
           <tr class="total">
-            <td>Average across all four</td>
-            <td class="win">93%</td>
-            <td>68%</td>
+            <td>Average across all three</td>
+            <td class="win">95%</td>
+            <td>66%</td>
           </tr>
         </tbody>
       </table>
 
-      <p class="compare-takeaway"><strong>+25 points on average.</strong> The freestyle AI usually misses three things: it forgets the marker-bounded sections (so <code>/design refine</code> can't surgically update a single block later), it puts hex codes outside backticks (the showroom's color pickers can't bind to them), and it ignores parts of the brief — "no gray" turned into "five shades of gray." <code>/design</code> bakes all three in.</p>
+      <p class="compare-takeaway"><strong>+29 points on average.</strong> Freestyle never lost on the descriptive criteria — hex codes in code ticks, full font stacks, numerical layout specs all appear naturally. It lost every time on the <em>structural</em> contract: it invented its own section IDs (<code>design-overview</code>, <code>design.tokens.color</code>) and marker patterns (<code>&lt;!-- BEGIN:design-X --&gt;</code>) instead of the engine's canonical <code>&lt;!-- BEGIN:haac-aikit:section:X --&gt;</code>. That's the gap <code>/design</code> closes — and why surgical refine works after.</p>
     </section>
 
     <!-- ============ what else ============ -->
