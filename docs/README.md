@@ -26,6 +26,6 @@ If you're contributing, also read:
 
 ## What's not here
 
-- **Per-skill documentation.** Each skill in `catalog/skills/` is self-documenting via its frontmatter `description`.
+- **Per-skill documentation.** Each skill in `catalog/skills/<tier>/<name>/SKILL.md` is self-documenting via its frontmatter `description`.
 - **Per-subagent documentation.** Same — see `catalog/agents/<agent>.md` directly.
 - **API docs.** This is a CLI; the `--help` output is the API.
