@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed (breaking — pre-1.0)
+- **Skills migrated to folder format.** Each skill now lives at `catalog/skills/<tier>/<name>/SKILL.md` (was `catalog/skills/<tier>/<name>.md`). Install destination mirrors the layout: `.claude/skills/<name>/SKILL.md`. Sibling files inside a skill folder (e.g. `spec-kit/references/`) now install alongside `SKILL.md` and participate in `aikit sync` conflict detection per file. The flat `.md` layout is no longer accepted by `catalog-check`.
+
+### Fixed
+- **`aikit init` shipped zero skills.** Six consumers in `src/` (sync, add, list, diff, doctor, conflict-routing) still ran `readdirSync(...).filter(.md)` against folders after the prior migration, returning `[]` and silently no-op'ing. `aikit diff` even reported "No drift" on the empty kit. All seven consumers now read folder names from a single helper in `src/catalog/index.ts`.
+- **`aikit add --html` aborted** with "bundled skill missing in catalog" — used the old flat path. Now installs `.claude/skills/<name>/SKILL.md` for each of the four HTML skills.
+- **Conflict resolution's tier3 routing** computed `name = "SKILL"` for every folder-format skill in `.claude/skills/<name>/SKILL.md` (used `basename().replace(/\.md$/, "")`). Now extracts the folder name via `tier3KeyFromConflictPath`, which also matches sibling files inside a skill folder.
+- **Orchestrator agent** delegated to `backend`/`frontend`/`mobile` without checking they were installed (they're tier2 / opt-in). Prompt now documents the availability check and fallback to `general-purpose`.
+
+### Hardened
+- **`catalog-check.js`** rejects unrecognized entries at tier roots (typos like `foo.mdx`, stray files, `SKILL.md` dropped at tier root). Tolerates `.DS_Store`.
+- **`allowed-tools:` required to be non-empty.** A bare `allowed-tools:` or `allowed-tools: []` previously passed validation; empty allow-lists defeat least-privilege.
+
+### Migration
+1. **Re-run `aikit sync`** after upgrading. Existing `.claude/skills/<name>.md` files installed by 0.12.0 / 0.13.0 are orphaned by the new folder layout — `aikit diff` will report them as drift. Delete them manually (or leave them; they're inert).
+2. **No `.aikitrc.json` schema change.** Your existing config is forward-compatible.
+3. **Tooling that reads `.claude/skills/<name>.md` directly** (rare — most tools discover via frontmatter) needs to read `.claude/skills/<name>/SKILL.md` instead.
+
+### Tests
+- New `test/catalog-check.test.ts` — 9 fixture-based validator cases.
+- `test/sync-claude.test.ts` — asserts representative `SKILL.md` installs + `spec-kit/references/` rides along (5-line guard against the entire regression class).
+- 169/169 tests pass.
+
 ## [0.13.0] - 2026-05-15
 
 Adds **`/design`**, a tier2 / opt-in skill that codifies a project's visual language as a `DESIGN.md` contract every AI tool can read, plus an interactive HTML showroom for human review and in-browser tweaks. Validated against a 4-scenario benchmark — **+25 percentage points** vs. baseline (93% vs. 68% pass-rate). Also fixes a packaging gap so any tier2 skill that ships with a slash command or template directory installs correctly via `aikit add <name>`.

@@ -31,7 +31,7 @@ Run a single test: `npx vitest run test/path.test.ts -t "name"`.
 - `src/wizard.ts`        — `@clack/prompts` interactive setup
 - `catalog/rules/`       — `AGENTS.md.tmpl`, per-tool shims, `aikit-rules.json` (pattern config), `claude-rules/example.md`
 - `catalog/hooks/`       — bash hooks: safety (block-*) + telemetry (log-rule-event, check-pattern-violations, judge-rule-compliance)
-- `catalog/skills/`      — tier1 (always-on) and tier2 (opt-in) skills
+- `catalog/skills/`      — tier1 (always-on) and tier2 (opt-in) skills, each as `<name>/SKILL.md`
 - `catalog/agents/`      — tier1 (`orchestrator`, `pr-describer`) and tier2 (shape-specialty agents)
 - `catalog/commands/`    — slash commands (one per HTML skill + commit / commit-push-pr / security-review / ship + opt-in `/design`)
 - `catalog/templates/`   — HTML templates: `docs/`, `decide/`, `directions/`, `roadmap/`, `design/` (opt-in: DESIGN.md showroom)
